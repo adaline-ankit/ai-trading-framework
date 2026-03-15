@@ -1,0 +1,63 @@
+[project]
+name = "ai-trading-framework"
+version = "0.1.0"
+description = "Open-source AI trading workflow framework with human-in-the-loop execution."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Codex" }]
+dependencies = [
+  "fastapi>=0.115.0",
+  "httpx>=0.28.0",
+  "jinja2>=3.1.6",
+  "openai>=1.68.0",
+  "pydantic>=2.10.0",
+  "pydantic-settings>=2.8.0",
+  "python-dotenv>=1.0.1",
+  "sqlalchemy>=2.0.38",
+  "uvicorn>=0.34.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.13.0",
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.25.0",
+  "ruff>=0.8.0",
+]
+opentelemetry = [
+  "opentelemetry-api>=1.30.0",
+  "opentelemetry-sdk>=1.30.0",
+]
+
+[project.scripts]
+ai-trading = "ai_trading_framework.core.cli.main:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["ai_trading_framework"]
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
