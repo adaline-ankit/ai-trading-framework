@@ -395,10 +395,13 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
         <article class="panel">
           <h2 class="section-title">Broker Status</h2>
           <div id="zerodha-status" class="detail-box">Loading broker status...</div>
+          <div id="telegram-status" class="detail-box" style="margin-top: 12px;">Loading Telegram status...</div>
           <div class="toolbar" style="margin-top: 12px;">
             <button id="connect-zerodha" class="btn-primary" type="button">Connect Zerodha</button>
             <button id="disconnect-zerodha" class="btn-secondary" type="button">Disconnect</button>
+            <button id="setup-telegram" class="btn-secondary" type="button">Setup Telegram</button>
             <button id="refresh-button" class="btn-secondary" type="button">Refresh</button>
+            <button id="clear-history" class="btn-danger" type="button">Clear History</button>
           </div>
         </article>
 
@@ -448,6 +451,7 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
       const messageEl = document.getElementById("message");
       const recommendationListEl = document.getElementById("recommendation-list");
       const zerodhaStatusEl = document.getElementById("zerodha-status");
+      const telegramStatusEl = document.getElementById("telegram-status");
       const paperPositionsEl = document.getElementById("paper-positions");
       const zerodhaPositionsEl = document.getElementById("zerodha-positions");
       const consoleOutputEl = document.getElementById("console-output");
@@ -549,6 +553,31 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
           </div>
           <div class="subtle" style="margin-top:10px;">
             Login URL: ${{status.login_url ? `<code>${{status.login_url}}</code>` : "Not configured"}}
+          </div>
+        `;
+      }}
+
+      function renderTelegram(status) {{
+        const configured = status.configured ? "CONFIGURED" : "NOT_CONFIGURED";
+        const enabled = status.enabled ? "ENABLED" : "DISABLED";
+        const webhookUrl = status.webhook?.result?.url || status.webhook?.url || "";
+        const pendingUpdates = status.webhook?.result?.pending_update_count ?? status.webhook?.pending_update_count;
+        telegramStatusEl.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+            <div>
+              <strong>Telegram Bot</strong>
+              <div class="subtle">Default chat: ${{escapeForHtml(status.default_chat_id || "not set")}}</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              ${{chip(enabled)}}
+              ${{chip(configured)}}
+            </div>
+          </div>
+          <div class="subtle" style="margin-top:10px;">
+            Webhook: ${{escapeForHtml(webhookUrl || "not configured")}}
+          </div>
+          <div class="subtle" style="margin-top:4px;">
+            Pending Telegram updates: ${{pendingUpdates ?? "unknown"}}
           </div>
         `;
       }}
@@ -704,6 +733,7 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
           renderStats(payload.recommendations);
           renderRecommendations(payload.recommendations);
           renderZerodha(payload.zerodha);
+          renderTelegram(payload.telegram || {{enabled: false, configured: false}});
           renderPositions(paperPositionsEl, payload.positions.paper);
           renderPositions(zerodhaPositionsEl, payload.positions.zerodha);
         }} catch (error) {{
@@ -867,6 +897,35 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
         }}
       }}
 
+      async function setupTelegram() {{
+        try {{
+          const payload = await fetchJson("/v1/telegram/setup", {{ method: "POST" }});
+          consoleOutputEl.textContent = JSON.stringify(payload, null, 2);
+          showMessage("success", "Telegram webhook configured for production.");
+          const status = await fetchJson("/v1/telegram/status", {{ headers: {{}} }});
+          renderTelegram(status);
+        }} catch (error) {{
+          showMessage("error", error.message);
+        }}
+      }}
+
+      async function clearHistory() {{
+        const confirmed = window.confirm(
+          "Clear all stored runs, recommendations, approvals, and execution history?",
+        );
+        if (!confirmed) {{
+          return;
+        }}
+        try {{
+          await fetchJson("/v1/history/clear", {{ method: "POST" }});
+          consoleOutputEl.textContent = "History cleared.";
+          showMessage("success", "Runtime history cleared.");
+          await loadBootstrap();
+        }} catch (error) {{
+          showMessage("error", error.message);
+        }}
+      }}
+
       document.getElementById("scan-button").addEventListener("click", scanSymbol);
       document.getElementById("benchmark-button").addEventListener("click", benchmarkSymbol);
       document.getElementById("refresh-button").addEventListener("click", loadBootstrap);
@@ -874,6 +933,8 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
         .getElementById("connect-zerodha")
         .addEventListener("click", () => window.location.assign("/v1/brokers/zerodha/login"));
       document.getElementById("disconnect-zerodha").addEventListener("click", disconnectZerodha);
+      document.getElementById("setup-telegram").addEventListener("click", setupTelegram);
+      document.getElementById("clear-history").addEventListener("click", clearHistory);
       document.getElementById("logout-button").addEventListener("click", logout);
       window.approveRecommendation = approveRecommendation;
       window.rejectRecommendation = rejectRecommendation;

@@ -8,6 +8,18 @@ Set:
 
 The notifier ships with recommendation formatting and `/why`-style explanation support.
 
+The production dashboard can now also configure the webhook by calling:
+
+```text
+POST /v1/telegram/setup
+```
+
+Inspect current status with:
+
+```text
+GET /v1/telegram/status
+```
+
 ## Supported Commands
 
 - `/scan SYMBOL`
@@ -34,3 +46,12 @@ curl -X POST http://127.0.0.1:8000/v1/telegram/webhook/change-me \
   -H "content-type: application/json" \
   -d '{"message":{"text":"/scan INFY","chat":{"id":123}}}'
 ```
+
+The bot also emits inline buttons for:
+
+- `Approve`
+- `Reject`
+- `Why`
+- `Risk`
+
+Those actions are handled through Telegram `callback_query` payloads at the same webhook endpoint.

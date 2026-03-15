@@ -113,6 +113,16 @@ class SQLAlchemyRunStore:
             models = session.scalars(select(RunModel).limit(limit)).all()
             return [RunRecord.model_validate(json.loads(model.payload)) for model in models]
 
+    def delete_run(self, run_id: str) -> None:
+        with Session(self.engine) as session:
+            session.execute(delete(RunModel).where(RunModel.run_id == run_id))
+            session.commit()
+
+    def clear_runs(self) -> None:
+        with Session(self.engine) as session:
+            session.execute(delete(RunModel))
+            session.commit()
+
     def save_operator(self, operator: OperatorIdentity) -> OperatorIdentity:
         with Session(self.engine) as session:
             session.merge(

@@ -37,6 +37,9 @@ class ApprovalService:
     def list_requests(self) -> list[ApprovalRequest]:
         return [approval for approval in self._requests.values()]
 
+    def clear(self) -> None:
+        self._requests.clear()
+
     def approve(self, recommendation_id: str, token: str) -> ApprovalRequest:
         approval = self._require_pending(recommendation_id, token)
         approval.status = ApprovalStatus.APPROVED

@@ -35,6 +35,7 @@ class OrderActionRequest(BaseModel):
 class TelegramWebhookPayload(BaseModel):
     update_id: int | None = None
     message: dict | None = None
+    callback_query: dict | None = None
 
 
 class PasswordLoginRequest(BaseModel):
@@ -165,6 +166,21 @@ def create_app() -> FastAPI:
             return max(1, min(risk.max_position_size, 1))
         return 1
 
+    def telegram_status_payload() -> dict[str, object]:
+        notifier = runtime.notifier
+        if not notifier:
+            return {"enabled": False, "configured": False}
+        return {
+            "enabled": getattr(notifier, "enabled", False),
+            "configured": bool(settings.telegram_bot_token and settings.telegram_default_chat_id),
+            "default_chat_id": settings.telegram_default_chat_id,
+        }
+
+    def ensure_allowed_telegram_chat(chat_id: str | None) -> None:
+        expected = settings.telegram_default_chat_id
+        if expected and chat_id and chat_id != expected:
+            raise HTTPException(status_code=403, detail="Telegram chat is not authorized.")
+
     protected_operator = Depends(require_operator)
 
     @app.get("/v1/health")
@@ -215,6 +231,7 @@ def create_app() -> FastAPI:
         return {
             "recommendations": runtime.list_recommendations(),
             "zerodha": zerodha_status,
+            "telegram": telegram_status_payload(),
             "positions": {
                 "paper": [
                     position.model_dump(mode="json")
@@ -306,6 +323,34 @@ def create_app() -> FastAPI:
         response = JSONResponse({"authenticated": False})
         clear_session_cookie(response)
         return response
+
+    @app.post("/v1/history/clear")
+    async def clear_history(_operator=protected_operator):
+        runtime.clear_history()
+        return {"ok": True}
+
+    @app.get("/v1/telegram/status")
+    async def telegram_status(_operator=protected_operator):
+        notifier = runtime.notifier
+        payload = telegram_status_payload()
+        if notifier and getattr(notifier, "enabled", False):
+            payload["webhook"] = await notifier.get_webhook_info()
+        return payload
+
+    @app.post("/v1/telegram/setup")
+    async def telegram_setup(_operator=protected_operator):
+        notifier = runtime.notifier
+        if not notifier or not getattr(notifier, "bot_token", None):
+            raise HTTPException(status_code=400, detail="Telegram bot token is not configured.")
+        webhook_url = (
+            f"{settings.public_base_url.rstrip('/')}/v1/telegram/webhook/"
+            f"{settings.telegram_webhook_secret}"
+        )
+        payload = await notifier.set_webhook(webhook_url)
+        return {
+            "webhook_url": webhook_url,
+            "result": payload,
+        }
 
     @app.get("/v1/scan/{symbol}")
     async def scan(
@@ -464,15 +509,63 @@ def create_app() -> FastAPI:
     async def telegram_webhook(secret: str, payload: TelegramWebhookPayload):
         if secret != settings.telegram_webhook_secret:
             raise HTTPException(status_code=403, detail="Invalid Telegram webhook secret.")
+        callback_query = payload.callback_query or {}
+        if callback_query:
+            chat = (callback_query.get("message") or {}).get("chat") or {}
+            chat_id = str(chat.get("id")) if chat.get("id") is not None else None
+            ensure_allowed_telegram_chat(chat_id)
+            data = str(callback_query.get("data") or "")
+            action, _, recommendation_id = data.partition("|")
+            if not recommendation_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Telegram callback is missing a recommendation id.",
+                )
+            if action == "approve":
+                approval = await runtime.approve_with_stored_token(recommendation_id)
+                response = f"Approved {approval.recommendation_id}."
+            elif action == "reject":
+                approval = await runtime.reject_with_stored_token(recommendation_id)
+                response = f"Rejected {approval.recommendation_id}."
+            elif action == "why":
+                recommendation = runtime.get_recommendation(recommendation_id)
+                if recommendation:
+                    response = recommendation.explain().why_this_trade
+                else:
+                    response = "Recommendation not found."
+            elif action == "risk":
+                recommendation = runtime.get_recommendation(recommendation_id)
+                if not recommendation:
+                    response = "Recommendation not found."
+                else:
+                    risk = runtime.get_risk(recommendation.recommendation_id)
+                    if not risk:
+                        response = "Risk evaluation not found."
+                    else:
+                        reasons = [reason for check in risk.checks for reason in check.reasons]
+                        response = "\n".join([f"{risk.decision}: {risk.summary}", *reasons])
+            else:
+                response = "Unsupported Telegram action."
+            notifier = runtime.notifier
+            if notifier and callback_query.get("id"):
+                await notifier.answer_callback_query(str(callback_query["id"]), response[:180])
+            if notifier and chat_id:
+                await notifier.send_message(response, chat_id=chat_id)
+            return {"ok": True, "response": response}
+
         message = payload.message or {}
         text = str(message.get("text") or "").strip()
         chat = message.get("chat") or {}
         chat_id = str(chat.get("id")) if chat.get("id") is not None else None
+        ensure_allowed_telegram_chat(chat_id)
         parts = text.split()
         if parts and parts[0].lower() in {"/scan", "/analyze"} and len(parts) >= 2:
             symbol = parts[1].upper()
-            context, recommendations = await pipeline.analyze(symbol, broker=BrokerName.PAPER)
-            await runtime.analyze(context, recommendations, broker=BrokerName.PAPER)
+            broker = BrokerName.PAPER
+            if len(parts) >= 3 and parts[2].upper() in {"PAPER", "ZERODHA"}:
+                broker = BrokerName(parts[2].upper())
+            context, recommendations = await pipeline.analyze(symbol, broker=broker)
+            await runtime.analyze(context, recommendations, broker=broker)
         response = await runtime.handle_telegram_command(text, chat_id=chat_id)
         return {"ok": True, "response": response}
 

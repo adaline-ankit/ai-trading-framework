@@ -69,6 +69,46 @@ def test_api_paper_execution_and_telegram_webhook(tmp_path, monkeypatch):
         assert "ExecutionCompleted" in replay.json()
 
 
+def test_telegram_callback_query_approval_flow(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'framework.db'}")
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "secret")
+    monkeypatch.setenv("TELEGRAM_DEFAULT_CHAT_ID", "123")
+    get_settings.cache_clear()
+    app = create_app()
+    runtime = app.state.runtime
+
+    async def fake_answer(callback_query_id: str, text: str) -> None:
+        return None
+
+    async def fake_send_message(message: str, chat_id: str | None = None, **kwargs) -> None:
+        return None
+
+    monkeypatch.setattr(runtime.notifier, "answer_callback_query", fake_answer)
+    monkeypatch.setattr(runtime.notifier, "send_message", fake_send_message)
+
+    with TestClient(app) as client:
+        scan = client.get("/v1/scan/INFY?broker=ZERODHA")
+        assert scan.status_code == 200
+        recommendation_id = scan.json()["recommendations"][0]["recommendation_id"]
+
+        callback = client.post(
+            "/v1/telegram/webhook/secret",
+            json={
+                "callback_query": {
+                    "id": "callback-1",
+                    "data": f"approve|{recommendation_id}",
+                    "message": {"chat": {"id": 123}},
+                }
+            },
+        )
+        assert callback.status_code == 200
+        assert "Approved" in callback.json()["response"]
+
+        detail = client.get(f"/v1/recommendations/{recommendation_id}")
+        assert detail.status_code == 200
+        assert detail.json()["approval"]["status"] == "APPROVED"
+
+
 def test_api_approval_before_live_submit(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'framework.db'}")
     monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "secret")
@@ -139,8 +179,15 @@ def test_password_auth_guards_operator_routes(tmp_path, monkeypatch):
         assert bootstrap.status_code == 200
         assert "recommendations" in bootstrap.json()
 
+        telegram_status = client.get("/v1/telegram/status")
+        assert telegram_status.status_code == 200
+
         scan = client.get("/v1/scan/INFY?broker=PAPER")
         assert scan.status_code == 200
+
+        clear = client.post("/v1/history/clear")
+        assert clear.status_code == 200
+        assert client.get("/v1/dashboard/bootstrap").json()["recommendations"] == []
 
 
 def test_zerodha_callback_persists_broker_session(tmp_path, monkeypatch):

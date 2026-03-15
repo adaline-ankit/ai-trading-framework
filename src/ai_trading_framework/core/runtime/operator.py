@@ -117,6 +117,14 @@ class OperatorRuntime:
     def get_approval(self, recommendation_id: str) -> ApprovalRequest | None:
         return self.approval_service.get(recommendation_id)
 
+    def clear_history(self) -> None:
+        self.runs.clear()
+        self.recommendations.clear()
+        self.risks.clear()
+        self.executions.clear()
+        self.approval_service.clear()
+        self.run_store.clear_runs()
+
     async def get_positions(self, broker: BrokerName):
         broker_client = self.workflow.execution_service.brokers[broker]
         return await broker_client.get_positions()
@@ -138,6 +146,12 @@ class OperatorRuntime:
             )
         return approval
 
+    async def approve_with_stored_token(self, recommendation_id: str) -> ApprovalRequest:
+        approval = self.get_approval(recommendation_id)
+        if not approval:
+            raise KeyError(f"Approval for {recommendation_id} not found.")
+        return await self.approve_recommendation(recommendation_id, approval.token)
+
     async def reject_recommendation(self, recommendation_id: str, token: str) -> ApprovalRequest:
         approval = self.approval_service.reject(recommendation_id, token)
         run = self._require_run(approval.run_id)
@@ -151,6 +165,12 @@ class OperatorRuntime:
                 f"Rejected {recommendation.symbol} ({recommendation.recommendation_id})."
             )
         return approval
+
+    async def reject_with_stored_token(self, recommendation_id: str) -> ApprovalRequest:
+        approval = self.get_approval(recommendation_id)
+        if not approval:
+            raise KeyError(f"Approval for {recommendation_id} not found.")
+        return await self.reject_recommendation(recommendation_id, approval.token)
 
     async def preview_order(
         self,

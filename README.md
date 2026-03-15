@@ -128,6 +128,8 @@ ai-trading deploy
 - `GET /v1/auth/login/{provider}`
 - `GET /v1/auth/callback/{provider}`
 - `POST /v1/auth/logout`
+- `GET /v1/dashboard/bootstrap`
+- `POST /v1/history/clear`
 - `GET /v1/scan/{symbol}`
 - `GET /v1/recommendations`
 - `GET /v1/recommendations/{id}`
@@ -141,6 +143,8 @@ ai-trading deploy
 - `GET /v1/brokers/zerodha/login`
 - `GET /v1/brokers/zerodha/callback`
 - `POST /v1/brokers/zerodha/disconnect`
+- `GET /v1/telegram/status`
+- `POST /v1/telegram/setup`
 - `POST /v1/telegram/webhook/{secret}`
 
 ## Safety Model
