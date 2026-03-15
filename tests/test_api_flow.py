@@ -128,10 +128,12 @@ def test_password_auth_guards_operator_routes(tmp_path, monkeypatch):
         )
         assert login.status_code == 200
         assert login.json()["authenticated"] is True
+        assert "password_hash" not in login.json()["operator"]
 
         me = client.get("/v1/auth/me")
         assert me.status_code == 200
         assert me.json()["operator"]["email"] == "ops@example.com"
+        assert "password_hash" not in me.json()["operator"]
 
         scan = client.get("/v1/scan/INFY?broker=PAPER")
         assert scan.status_code == 200

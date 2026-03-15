@@ -99,6 +99,19 @@ def create_app() -> FastAPI:
             "received_at": session.received_at.isoformat(),
         }
 
+    def operator_public_payload(operator) -> dict[str, object]:
+        return {
+            "operator_id": operator.operator_id,
+            "email": operator.email,
+            "display_name": operator.display_name,
+            "role": operator.role.value,
+            "auth_provider": operator.auth_provider,
+            "provider_subject": operator.provider_subject,
+            "metadata": operator.metadata,
+            "created_at": operator.created_at.isoformat(),
+            "last_login_at": operator.last_login_at.isoformat() if operator.last_login_at else None,
+        }
+
     def render_login_page(error: str | None = None) -> HTMLResponse:
         auth_service = runtime.auth_service
         auth_summary = auth_service.auth_summary() if auth_service else {"enabled": False}
@@ -177,7 +190,7 @@ def create_app() -> FastAPI:
         auth_service = runtime.auth_service
         return {
             "auth": auth_service.auth_summary() if auth_service else {"enabled": False},
-            "operator": operator.model_dump(mode="json") if operator else None,
+            "operator": operator_public_payload(operator) if operator else None,
         }
 
     @app.post("/v1/auth/login")
@@ -209,7 +222,7 @@ def create_app() -> FastAPI:
         response = JSONResponse(
             {
                 "authenticated": True,
-                "operator": operator.model_dump(mode="json"),
+                "operator": operator_public_payload(operator),
             }
         )
         set_session_cookie(response, operator_session.session_token)
