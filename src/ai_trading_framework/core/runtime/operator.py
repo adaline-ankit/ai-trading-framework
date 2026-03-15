@@ -7,6 +7,7 @@ from ai_trading_framework.analytics.benchmark import BenchmarkService
 from ai_trading_framework.core.approvals.service import ApprovalService
 from ai_trading_framework.core.engine.workflow import WorkflowEngine
 from ai_trading_framework.core.replay.service import ReplayEngine
+from ai_trading_framework.core.security.auth import OperatorAuthService
 from ai_trading_framework.models import (
     ApprovalRequest,
     ApprovalStatus,
@@ -34,6 +35,7 @@ class OperatorRuntime:
         benchmark_service: BenchmarkService,
         run_store: SQLAlchemyRunStore,
         notifier=None,
+        auth_service: OperatorAuthService | None = None,
     ) -> None:
         self.workflow = workflow
         self.approval_service = approval_service
@@ -41,6 +43,7 @@ class OperatorRuntime:
         self.benchmark_service = benchmark_service
         self.run_store = run_store
         self.notifier = notifier
+        self.auth_service = auth_service
         self.runs: dict[str, RunRecord] = {}
         self.recommendations: dict[str, Recommendation] = {}
         self.risks: dict[str, RiskEvaluation] = {}
@@ -117,6 +120,9 @@ class OperatorRuntime:
     async def get_positions(self, broker: BrokerName):
         broker_client = self.workflow.execution_service.brokers[broker]
         return await broker_client.get_positions()
+
+    def get_zerodha_client(self):
+        return self.workflow.execution_service.brokers[BrokerName.ZERODHA]
 
     async def approve_recommendation(self, recommendation_id: str, token: str) -> ApprovalRequest:
         approval = self.approval_service.approve(recommendation_id, token)

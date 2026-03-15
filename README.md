@@ -27,6 +27,7 @@ Most AI trading repos are either notebooks, strategy bundles, or single-purpose 
 - Event-driven workflow engine with replay support
 - Approval-first execution model for non-paper brokers
 - Telegram, dashboard, API, and CLI surfaces on one runtime
+- Postgres-backed operator auth sessions and durable broker connectivity
 - Explainability engine with `why_this_trade`, signal, and risk sections
 - Risk policy chain with deterministic guardrails
 - Sandbox mode, benchmarking, and paper trading
@@ -73,6 +74,23 @@ uv run uvicorn ai_trading_framework.api.app:create_app --factory --reload
 uv run pytest
 ```
 
+## Authentication
+
+The framework now supports scalable operator auth for Railway and other hosted deployments.
+
+- `AUTH_MODE=PASSWORD` for a single-admin bootstrap
+- `AUTH_MODE=OIDC` for external identity providers
+- `AUTH_MODE=HYBRID` for OIDC plus a password fallback
+- Operator sessions are stored in the database, not on local disk
+- Zerodha connection state is also stored in the database, so deploys do not lose broker auth
+
+For Railway deployments, the recommended pattern is:
+
+- Railway Postgres for runtime state
+- OIDC for operator sign-in
+- Telegram webhook secret for bot ingress
+- no persistent volume for auth/session state
+
 ## CLI
 
 ```bash
@@ -104,6 +122,12 @@ ai-trading deploy
 
 ## Operator APIs
 
+- `GET /v1/auth/providers`
+- `GET /v1/auth/me`
+- `POST /v1/auth/login`
+- `GET /v1/auth/login/{provider}`
+- `GET /v1/auth/callback/{provider}`
+- `POST /v1/auth/logout`
 - `GET /v1/scan/{symbol}`
 - `GET /v1/recommendations`
 - `GET /v1/recommendations/{id}`
@@ -113,6 +137,10 @@ ai-trading deploy
 - `POST /v1/orders/submit`
 - `GET /v1/positions/{broker}`
 - `GET /v1/replay/{run_id}`
+- `GET /v1/brokers/zerodha`
+- `GET /v1/brokers/zerodha/login`
+- `GET /v1/brokers/zerodha/callback`
+- `POST /v1/brokers/zerodha/disconnect`
 - `POST /v1/telegram/webhook/{secret}`
 
 ## Safety Model

@@ -13,6 +13,7 @@ from ai_trading_framework.core.plugin_system.registry import PluginRegistry
 from ai_trading_framework.core.replay.service import ReplayEngine
 from ai_trading_framework.core.runtime.operator import OperatorRuntime
 from ai_trading_framework.core.runtime.settings import Settings
+from ai_trading_framework.core.security.auth import OperatorAuthService
 from ai_trading_framework.data.providers.demo import (
     DemoFundamentalProvider,
     DemoMarketDataProvider,
@@ -64,6 +65,9 @@ class FrameworkBuilder:
         return self
 
     def build(self) -> OperatorRuntime:
+        run_store = SQLAlchemyRunStore(self.settings.database_url)
+        auth_service = OperatorAuthService(self.settings, run_store)
+        auth_service.bootstrap_password_admin()
         approval_service = ApprovalService()
         brokers = {
             BrokerName.PAPER: PaperBrokerClient(self.market_provider),
@@ -71,6 +75,7 @@ class FrameworkBuilder:
                 self.settings.zerodha_api_key,
                 self.settings.zerodha_api_secret,
                 self.settings.zerodha_access_token,
+                run_store=run_store,
             ),
             BrokerName.GROWW: GrowwBrokerClient(),
         }
@@ -94,7 +99,6 @@ class FrameworkBuilder:
             risk_chain=risk_chain,
             execution_service=execution_service,
         )
-        run_store = SQLAlchemyRunStore(self.settings.database_url)
         return OperatorRuntime(
             workflow=workflow,
             approval_service=approval_service,
@@ -102,4 +106,5 @@ class FrameworkBuilder:
             benchmark_service=BenchmarkService(),
             run_store=run_store,
             notifier=self.notifier,
+            auth_service=auth_service,
         )

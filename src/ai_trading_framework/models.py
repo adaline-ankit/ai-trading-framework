@@ -32,6 +32,19 @@ class ApprovalStatus(StrEnum):
     CONSUMED = "CONSUMED"
 
 
+class AuthMode(StrEnum):
+    DISABLED = "DISABLED"
+    PASSWORD = "PASSWORD"
+    OIDC = "OIDC"
+    HYBRID = "HYBRID"
+
+
+class OperatorRole(StrEnum):
+    ADMIN = "ADMIN"
+    OPERATOR = "OPERATOR"
+    VIEWER = "VIEWER"
+
+
 class EventType(StrEnum):
     MARKET_CONTEXT_BUILT = "MarketContextBuilt"
     FEATURES_COMPUTED = "FeaturesComputed"
@@ -230,6 +243,55 @@ class ApprovalRequest(BaseModel):
     approved_at: datetime | None = None
     rejected_at: datetime | None = None
     consumed_at: datetime | None = None
+
+
+class OperatorIdentity(BaseModel):
+    operator_id: str = Field(default_factory=lambda: str(uuid4()))
+    email: str
+    display_name: str
+    role: OperatorRole = OperatorRole.ADMIN
+    auth_provider: str = "password"
+    provider_subject: str | None = None
+    password_hash: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utcnow)
+    last_login_at: datetime | None = None
+
+
+class OperatorSession(BaseModel):
+    session_id: str = Field(default_factory=lambda: str(uuid4()))
+    operator_id: str
+    session_token: str
+    auth_provider: str
+    created_at: datetime = Field(default_factory=utcnow)
+    expires_at: datetime
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class OAuthState(BaseModel):
+    state_id: str = Field(default_factory=lambda: str(uuid4()))
+    provider_name: str
+    state_token: str
+    code_verifier: str
+    redirect_after: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+    expires_at: datetime
+
+
+class BrokerAuthSession(BaseModel):
+    broker: BrokerName
+    access_token: str
+    refresh_token: str | None = None
+    public_token: str | None = None
+    request_token: str | None = None
+    api_key: str | None = None
+    user_id: str | None = None
+    user_name: str | None = None
+    email: str | None = None
+    login_time: str | None = None
+    actor_operator_id: str | None = None
+    received_at: datetime = Field(default_factory=utcnow)
+    raw: dict[str, Any] = Field(default_factory=dict)
 
 
 class OrderRequest(BaseModel):
