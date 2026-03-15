@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from ai_trading_framework.core.plugin_system.interfaces import ReasoningEngine
+from ai_trading_framework.core.plugin_system.interfaces import LLMProvider, ReasoningEngine
 from ai_trading_framework.models import Action, EvaluatedSignal, MarketContext, Recommendation
 from ai_trading_framework.reasoning.llm import HeuristicLLMProvider
 
 
 class DebateReasoningEngine(ReasoningEngine):
-    def __init__(self, llm_provider: HeuristicLLMProvider | None = None) -> None:
+    def __init__(self, llm_provider: LLMProvider | None = None) -> None:
         self.llm_provider = llm_provider or HeuristicLLMProvider()
 
     async def analyze(

@@ -1,13 +1,19 @@
 from __future__ import annotations
 
-from ai_trading_framework.core.plugin_system.interfaces import ReasoningEngine, SignalEngine
+from collections.abc import Sequence
+
+from ai_trading_framework.core.plugin_system.interfaces import (
+    ReasoningEngine,
+    SignalBatchItem,
+    SignalEngine,
+)
 from ai_trading_framework.data.providers.base import (
     FundamentalProvider,
     MarketDataProvider,
     NewsProvider,
     SentimentProvider,
 )
-from ai_trading_framework.models import BrokerName, MarketContext, Recommendation
+from ai_trading_framework.models import BrokerName, EvaluatedSignal, MarketContext, Recommendation
 from ai_trading_framework.sdk.strategies.base import TradingStrategy
 
 
@@ -48,9 +54,11 @@ class AnalysisPipeline:
             metadata={"broker": broker.value},
         )
         signals = await self.strategy.scan(context)
-        evaluated = signals
+        batch: Sequence[SignalBatchItem] = signals
+        evaluated: list[EvaluatedSignal] = []
         for engine in self.signal_engines:
-            evaluated = await engine.evaluate(evaluated, context)
+            evaluated = await engine.evaluate(batch, context)
+            batch = evaluated
         recommendations: list[Recommendation] = []
         for item in evaluated:
             recommendations.append(await self.reasoning_engine.analyze(item, context))

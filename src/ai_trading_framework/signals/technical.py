@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from ai_trading_framework.core.plugin_system.interfaces import SignalEngine
+from collections.abc import Sequence
+
+from ai_trading_framework.core.plugin_system.interfaces import SignalBatchItem, SignalEngine
 from ai_trading_framework.models import (
     Action,
     EvaluatedSignal,
@@ -39,10 +41,14 @@ class MomentumStrategy(TradingStrategy):
 
 class MomentumSignalEngine(SignalEngine):
     async def evaluate(
-        self, signals: list[Signal], market_context: MarketContext
+        self, signals: Sequence[SignalBatchItem], market_context: MarketContext
     ) -> list[EvaluatedSignal]:
         evaluated: list[EvaluatedSignal] = []
         for signal in signals:
+            strategy_name = getattr(signal, "strategy_name", None) or signal.metadata.get(
+                "strategy_name", "unknown"
+            )
+            rationale = getattr(signal, "rationale", None) or "Signal evaluation input."
             evaluated.append(
                 EvaluatedSignal(
                     signal_id=signal.signal_id,
@@ -61,10 +67,10 @@ class MomentumSignalEngine(SignalEngine):
                         4,
                     ),
                     factors=[
-                        signal.rationale,
+                        rationale,
                         f"Price change {market_context.price.change_percent}%",
                     ],
-                    metadata={"strategy_name": signal.strategy_name, **signal.metadata},
+                    metadata={"strategy_name": strategy_name, **signal.metadata},
                 )
             )
         return evaluated

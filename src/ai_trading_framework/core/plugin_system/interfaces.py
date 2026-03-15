@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import Any
 
 from ai_trading_framework.models import (
@@ -16,6 +17,8 @@ from ai_trading_framework.models import (
     Signal,
 )
 
+SignalBatchItem = Signal | EvaluatedSignal
+
 
 class StrategyProvider(ABC):
     @abstractmethod
@@ -25,7 +28,9 @@ class StrategyProvider(ABC):
 class SignalEngine(ABC):
     @abstractmethod
     async def evaluate(
-        self, signals: list[Signal], market_context: MarketContext
+        self,
+        signals: Sequence[SignalBatchItem],
+        market_context: MarketContext,
     ) -> list[EvaluatedSignal]: ...
 
 

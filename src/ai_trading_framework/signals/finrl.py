@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from ai_trading_framework.core.plugin_system.interfaces import SignalEngine
-from ai_trading_framework.models import Action, EvaluatedSignal, MarketContext, Signal
+from collections.abc import Sequence
+
+from ai_trading_framework.core.plugin_system.interfaces import SignalBatchItem, SignalEngine
+from ai_trading_framework.models import Action, EvaluatedSignal, MarketContext
 
 
 class FinRLSignalEngine(SignalEngine):
     async def evaluate(
-        self, signals: list[Signal | EvaluatedSignal], market_context: MarketContext
+        self,
+        signals: Sequence[SignalBatchItem],
+        market_context: MarketContext,
     ) -> list[EvaluatedSignal]:
         evaluated: list[EvaluatedSignal] = []
         for signal in signals:

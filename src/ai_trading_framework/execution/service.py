@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from ai_trading_framework.core.approvals.service import ApprovalService
+from ai_trading_framework.core.plugin_system.interfaces import BrokerClient
 from ai_trading_framework.models import (
     BrokerName,
     ExecutionResult,
@@ -13,7 +16,9 @@ from ai_trading_framework.models import (
 
 class ExecutionService:
     def __init__(
-        self, approval_service: ApprovalService, brokers: dict[BrokerName, object]
+        self,
+        approval_service: ApprovalService,
+        brokers: Mapping[BrokerName, BrokerClient],
     ) -> None:
         self.approval_service = approval_service
         self.brokers = brokers
