@@ -1,5 +1,9 @@
 # AI Trading Framework
 
+[![CI](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/ci.yml)
+[![Docker](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/docker.yml/badge.svg)](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/docker.yml)
+[![Release](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/release.yml/badge.svg)](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/release.yml)
+
 Open-source framework for building AI trading copilots with replayable workflows, deterministic guardrails, human approval, and broker execution adapters.
 
 This project is not an autonomous stock picker. The default operating model is:
