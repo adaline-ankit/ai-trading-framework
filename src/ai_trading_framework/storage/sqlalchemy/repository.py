@@ -37,3 +37,8 @@ class SQLAlchemyRunStore:
             if not model:
                 return None
             return RunRecord.model_validate(json.loads(model.payload))
+
+    def list_runs(self, limit: int = 100) -> list[RunRecord]:
+        with Session(self.engine) as session:
+            models = session.scalars(select(RunModel).limit(limit)).all()
+            return [RunRecord.model_validate(json.loads(model.payload)) for model in models]

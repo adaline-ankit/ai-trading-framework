@@ -102,6 +102,19 @@ ai-trading deploy
 - Railway deployment files
 - GitHub Actions for CI, Docker build, and releases
 
+## Operator APIs
+
+- `GET /v1/scan/{symbol}`
+- `GET /v1/recommendations`
+- `GET /v1/recommendations/{id}`
+- `POST /v1/recommendations/{id}/approve`
+- `POST /v1/recommendations/{id}/reject`
+- `POST /v1/orders/preview`
+- `POST /v1/orders/submit`
+- `GET /v1/positions/{broker}`
+- `GET /v1/replay/{run_id}`
+- `POST /v1/telegram/webhook/{secret}`
+
 ## Safety Model
 
 - Human-in-the-loop by default

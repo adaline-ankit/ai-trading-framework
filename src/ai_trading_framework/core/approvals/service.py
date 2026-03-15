@@ -20,6 +20,9 @@ class ApprovalService:
         self._requests[approval.recommendation_id] = approval
         return approval
 
+    def restore(self, approval: ApprovalRequest) -> None:
+        self._requests[approval.recommendation_id] = approval
+
     def get(self, recommendation_id: str) -> ApprovalRequest | None:
         approval = self._requests.get(recommendation_id)
         if (
@@ -30,6 +33,9 @@ class ApprovalService:
         ):
             approval.status = ApprovalStatus.EXPIRED
         return approval
+
+    def list_requests(self) -> list[ApprovalRequest]:
+        return [approval for approval in self._requests.values()]
 
     def approve(self, recommendation_id: str, token: str) -> ApprovalRequest:
         approval = self._require_pending(recommendation_id, token)
