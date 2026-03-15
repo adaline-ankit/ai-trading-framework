@@ -22,7 +22,7 @@ class MomentumStrategy(TradingStrategy):
         if len(closes) < 2:
             return []
         change = (closes[-1] - closes[0]) / max(closes[0], 1.0)
-        action = Action.BUY if change > 0.02 else Action.SELL if change < -0.02 else Action.HOLD
+        action = Action.BUY if change > 0.01 else Action.SELL if change < -0.01 else Action.HOLD
         confidence = min(max(abs(change) * 8, 0.52), 0.9)
         return [
             Signal(

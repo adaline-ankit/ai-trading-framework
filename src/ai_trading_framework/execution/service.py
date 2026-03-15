@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from ai_trading_framework.core.approvals.service import ApprovalService
 from ai_trading_framework.core.plugin_system.interfaces import BrokerClient
 from ai_trading_framework.models import (
+    Action,
     BrokerName,
     ExecutionResult,
     OrderPreview,
@@ -33,6 +34,13 @@ class ExecutionService:
         order_request: OrderRequest,
         risk_decision: RiskDecision,
     ) -> ExecutionResult:
+        if recommendation.action == Action.HOLD or order_request.action == Action.HOLD:
+            return ExecutionResult(
+                recommendation_id=order_request.recommendation_id,
+                broker=order_request.broker,
+                status="REJECTED",
+                message="Execution blocked because HOLD recommendations cannot be submitted.",
+            )
         if order_request.broker != BrokerName.PAPER:
             if risk_decision != RiskDecision.APPROVED:
                 return ExecutionResult(

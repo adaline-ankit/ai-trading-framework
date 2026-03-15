@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
+from ai_trading_framework.api.dashboard import render_operator_console
 from ai_trading_framework.core.orchestration.pipeline import AnalysisPipeline
 from ai_trading_framework.core.runtime.builder import FrameworkBuilder
 from ai_trading_framework.core.runtime.settings import get_settings
@@ -175,7 +176,12 @@ def create_app() -> FastAPI:
         operator = current_operator(request)
         if runtime.auth_service and runtime.auth_service.is_enabled() and not operator:
             return render_login_page(request.query_params.get("error"))
-        return runtime.render_dashboard()
+        return HTMLResponse(
+            render_operator_console(
+                settings.app_name,
+                operator_public_payload(operator) if operator else None,
+            )
+        )
 
     @app.get("/v1/auth/providers")
     async def auth_providers():
@@ -191,6 +197,31 @@ def create_app() -> FastAPI:
         return {
             "auth": auth_service.auth_summary() if auth_service else {"enabled": False},
             "operator": operator_public_payload(operator) if operator else None,
+        }
+
+    @app.get("/v1/dashboard/bootstrap")
+    async def dashboard_bootstrap(_operator=protected_operator):
+        zerodha_status = {
+            "connected": runtime.get_zerodha_client().is_connected(),
+            "login_url": runtime.get_zerodha_client().login_url(),
+            "session": zerodha_public_session(),
+        }
+        zerodha_positions = []
+        if zerodha_status["connected"]:
+            zerodha_positions = [
+                position.model_dump(mode="json")
+                for position in await runtime.get_positions(BrokerName.ZERODHA)
+            ]
+        return {
+            "recommendations": runtime.list_recommendations(),
+            "zerodha": zerodha_status,
+            "positions": {
+                "paper": [
+                    position.model_dump(mode="json")
+                    for position in await runtime.get_positions(BrokerName.PAPER)
+                ],
+                "zerodha": zerodha_positions,
+            },
         }
 
     @app.post("/v1/auth/login")

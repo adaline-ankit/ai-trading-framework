@@ -135,6 +135,10 @@ def test_password_auth_guards_operator_routes(tmp_path, monkeypatch):
         assert me.json()["operator"]["email"] == "ops@example.com"
         assert "password_hash" not in me.json()["operator"]
 
+        bootstrap = client.get("/v1/dashboard/bootstrap")
+        assert bootstrap.status_code == 200
+        assert "recommendations" in bootstrap.json()
+
         scan = client.get("/v1/scan/INFY?broker=PAPER")
         assert scan.status_code == 200
 
@@ -193,3 +197,29 @@ def test_zerodha_callback_persists_broker_session(tmp_path, monkeypatch):
     reloaded_session = runtime.run_store.get_broker_session(BrokerName.ZERODHA)
     assert reloaded_session is not None
     assert reloaded_session.access_token == "access-token"
+
+
+def test_hold_recommendation_cannot_execute(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'framework.db'}")
+    monkeypatch.delenv("AUTH_MODE", raising=False)
+    get_settings.cache_clear()
+    app = create_app()
+
+    with TestClient(app) as client:
+        scan = client.get("/v1/scan/SBIN?broker=PAPER")
+        assert scan.status_code == 200
+        recommendation = scan.json()["recommendations"][0]
+        assert recommendation["action"] == "HOLD"
+
+        submit = client.post(
+            "/v1/orders/submit",
+            json={
+                "recommendation_id": recommendation["recommendation_id"],
+                "broker": "PAPER",
+                "quantity": 1,
+                "order_type": "LIMIT",
+            },
+        )
+        assert submit.status_code == 200
+        assert submit.json()["result"]["status"] == "REJECTED"
+        assert "HOLD recommendations cannot be submitted" in submit.json()["result"]["message"]
