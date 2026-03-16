@@ -422,3 +422,30 @@ class StrategyBenchmark(BaseModel):
     max_drawdown: float
     approval_rate: float
     execution_slippage_bps: float
+
+
+class InvestmentCandidate(BaseModel):
+    symbol: str
+    recommendation_id: str
+    action: Action
+    confidence: float
+    score: float
+    estimated_entry_price: float
+    estimated_notional: float
+    suggested_quantity: float
+    risk_decision: RiskDecision
+    thesis: str
+    asset_class: AssetClass = AssetClass.UNKNOWN
+
+
+class InvestmentPlan(BaseModel):
+    plan_id: str = Field(default_factory=lambda: str(uuid4()))
+    broker: BrokerName
+    budget: float
+    symbols_considered: list[str] = Field(default_factory=list)
+    selected: InvestmentCandidate | None = None
+    alternatives: list[InvestmentCandidate] = Field(default_factory=list)
+    recommendation: Recommendation | None = None
+    approval: ApprovalRequest | None = None
+    summary: str = ""
+    next_step: str = ""

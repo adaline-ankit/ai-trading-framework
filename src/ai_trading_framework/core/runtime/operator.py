@@ -56,6 +56,7 @@ class OperatorRuntime:
         recommendations: list[Recommendation],
         broker: BrokerName,
         simulate_approval: bool = False,
+        notify: bool = True,
     ) -> tuple[RunRecord, list[Recommendation], list[RiskEvaluation]]:
         run, recommendations, risks = await self.workflow.process(
             context, recommendations, broker, simulate_approval=simulate_approval
@@ -64,7 +65,7 @@ class OperatorRuntime:
         for recommendation, risk in zip(recommendations, risks, strict=False):
             self.recommendations[recommendation.recommendation_id] = recommendation
             self.risks[recommendation.recommendation_id] = risk
-        if self.notifier and recommendations:
+        if notify and self.notifier and recommendations:
             approval = self.approval_service.get(recommendations[0].recommendation_id)
             await self.notifier.send_recommendation(
                 recommendations[0], approval.token if approval else None
@@ -284,7 +285,8 @@ class OperatorRuntime:
         else:
             response = (
                 "Supported commands: /scan SYMBOL, /analyze SYMBOL, /approve ID TOKEN, "
-                "/reject ID TOKEN, /why SYMBOL, /risk SYMBOL, /positions, /portfolio"
+                "/reject ID TOKEN, /why SYMBOL, /risk SYMBOL, /positions, /portfolio, "
+                "/invest AMOUNT [SYMBOL ...] [PAPER|ZERODHA]"
             )
         if self.notifier and chat_id:
             await self.notifier.send_message(response, chat_id=chat_id)

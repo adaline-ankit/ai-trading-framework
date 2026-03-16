@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from ai_trading_framework import __version__
+from ai_trading_framework.analytics.investment_planner import InvestmentPlanner
 from ai_trading_framework.api.dashboard import render_operator_console
 from ai_trading_framework.core.orchestration.pipeline import AnalysisPipeline
 from ai_trading_framework.core.runtime.builder import FrameworkBuilder
@@ -44,6 +45,12 @@ class PasswordLoginRequest(BaseModel):
     password: str
 
 
+class InvestmentPlanRequest(BaseModel):
+    budget: float
+    symbols: list[str] | None = None
+    broker: BrokerName = BrokerName.PAPER
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     builder = FrameworkBuilder(settings)
@@ -61,6 +68,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="AI Trading Framework", version=__version__)
     app.state.runtime = runtime
     app.state.pipeline = pipeline
+    app.state.investment_planner = InvestmentPlanner(runtime, pipeline)
 
     def current_operator(request: Request):
         auth_service = runtime.auth_service
@@ -176,6 +184,9 @@ def create_app() -> FastAPI:
             "configured": bool(settings.telegram_bot_token and settings.telegram_default_chat_id),
             "default_chat_id": settings.telegram_default_chat_id,
         }
+
+    def default_investment_symbols() -> list[str]:
+        return ["INFY", "TCS", "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN"]
 
     def ensure_allowed_telegram_chat(chat_id: str | None) -> None:
         expected = settings.telegram_default_chat_id
@@ -467,6 +478,16 @@ def create_app() -> FastAPI:
             for item in runtime.benchmark_service.compare(recommendations)
         ]
 
+    @app.post("/v1/investment-plan")
+    async def investment_plan(request: InvestmentPlanRequest, _operator=protected_operator):
+        symbols = request.symbols or default_investment_symbols()
+        plan = await app.state.investment_planner.plan(
+            budget=request.budget,
+            symbols=symbols,
+            broker=request.broker,
+        )
+        return plan.model_dump(mode="json")
+
     @app.get("/v1/brokers/zerodha")
     async def zerodha_status(_operator=protected_operator):
         client = runtime.get_zerodha_client()
@@ -616,6 +637,37 @@ def create_app() -> FastAPI:
                 broker = BrokerName(parts[2].upper())
             context, recommendations = await pipeline.analyze(symbol, broker=broker)
             await runtime.analyze(context, recommendations, broker=broker)
+        elif parts and parts[0].lower() == "/invest":
+            if len(parts) < 2:
+                response = "Usage: /invest AMOUNT [SYMBOL ...] [PAPER|ZERODHA]"
+                if runtime.notifier and chat_id:
+                    await runtime.notifier.send_message(response, chat_id=chat_id)
+                return {"ok": True, "response": response}
+            try:
+                budget = float(parts[1])
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Budget must be numeric.") from exc
+            broker = BrokerName.PAPER
+            raw_symbols = parts[2:]
+            if raw_symbols and raw_symbols[-1].upper() in {"PAPER", "ZERODHA"}:
+                broker = BrokerName(raw_symbols.pop().upper())
+            symbols = [symbol.upper() for symbol in raw_symbols] or default_investment_symbols()
+            plan = await app.state.investment_planner.plan(
+                budget=budget,
+                symbols=symbols,
+                broker=broker,
+            )
+            if plan.selected:
+                response = (
+                    f"Best idea: {plan.selected.symbol} at {plan.selected.confidence:.0%} "
+                    f"confidence. Suggested quantity: {plan.selected.suggested_quantity}. "
+                    f"Approval token: {(plan.approval.token if plan.approval else 'pending')}."
+                )
+            else:
+                response = plan.summary
+            if runtime.notifier and chat_id:
+                await runtime.notifier.send_message(response, chat_id=chat_id)
+            return {"ok": True, "response": response}
         response = await runtime.handle_telegram_command(text, chat_id=chat_id)
         return {"ok": True, "response": response}
 

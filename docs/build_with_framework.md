@@ -25,6 +25,7 @@ Build a bot that:
 - shows `/why`, `/risk`, and `/positions`
 - lets an operator approve or reject
 - executes through paper or a live broker
+- can rank candidate ideas for a fixed budget before the approval step
 
 This is the closest fit to the current first-party runtime.
 
@@ -159,6 +160,8 @@ Use:
 
 This is the current product-oriented shape of the repository.
 
+The framework now also supports a budget-aware planning flow so an operator can ask for the best current idea within a fixed amount and then carry that through approval and submission.
+
 ### Pattern D: Broker-Only Execution Gateway
 
 Use:
@@ -282,6 +285,35 @@ For most developers:
 4. Add one real market data provider.
 5. Add one real broker.
 6. Enable OIDC if multiple operators are involved.
+
+## Budget-Aware Planning
+
+The framework can now rank BUY ideas for a budget and produce a suggested quantity.
+
+API:
+
+```bash
+POST /v1/investment-plan
+{
+  "budget": 10000,
+  "symbols": ["INFY", "TCS", "SBIN"],
+  "broker": "PAPER"
+}
+```
+
+CLI:
+
+```bash
+ai-trading invest 10000 INFY TCS SBIN --broker PAPER
+```
+
+Telegram:
+
+```text
+/invest 10000 INFY TCS SBIN PAPER
+```
+
+This does not bypass approval-first execution. It finds the best approved BUY candidate for the budget, suggests quantity, creates the recommendation and approval request, and then lets the existing approval and execution flow continue.
 
 ## What The Perfect Future Version Should Support
 

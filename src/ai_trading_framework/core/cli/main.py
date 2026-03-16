@@ -8,7 +8,7 @@ from pathlib import Path
 import uvicorn
 
 from ai_trading_framework import __version__
-from ai_trading_framework.analytics.benchmark import BenchmarkService
+from ai_trading_framework.analytics import BenchmarkService, InvestmentPlanner
 from ai_trading_framework.core.orchestration.pipeline import AnalysisPipeline
 from ai_trading_framework.core.runtime.builder import FrameworkBuilder
 from ai_trading_framework.core.runtime.settings import get_settings
@@ -70,6 +70,24 @@ async def run_benchmark(symbol: str) -> list[dict]:
     ]
 
 
+async def run_investment_plan(
+    budget: float,
+    symbols: list[str],
+    broker: BrokerName = BrokerName.PAPER,
+) -> dict:
+    settings = get_settings()
+    builder = FrameworkBuilder(settings)
+    runtime = builder.build()
+    pipeline = build_pipeline(builder)
+    planner = InvestmentPlanner(runtime, pipeline)
+    plan = await planner.plan(
+        budget=budget,
+        symbols=symbols or ["INFY", "TCS", "RELIANCE", "HDFCBANK", "SBIN"],
+        broker=broker,
+    )
+    return plan.model_dump(mode="json")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ai-trading")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -91,6 +109,11 @@ def main() -> None:
 
     benchmark_parser = subparsers.add_parser("benchmark")
     benchmark_parser.add_argument("symbol", nargs="?", default="INFY")
+
+    invest_parser = subparsers.add_parser("invest")
+    invest_parser.add_argument("budget", type=float)
+    invest_parser.add_argument("symbols", nargs="*")
+    invest_parser.add_argument("--broker", default="PAPER", choices=["PAPER", "ZERODHA"])
 
     subparsers.add_parser("sandbox")
 
@@ -123,6 +146,20 @@ def main() -> None:
         return
     if args.command == "benchmark":
         print(json.dumps(asyncio.run(run_benchmark(args.symbol)), indent=2))
+        return
+    if args.command == "invest":
+        print(
+            json.dumps(
+                asyncio.run(
+                    run_investment_plan(
+                        budget=args.budget,
+                        symbols=args.symbols,
+                        broker=BrokerName(args.broker),
+                    )
+                ),
+                indent=2,
+            )
+        )
         return
     if args.command == "sandbox":
         db_path = Path("ai_trading_framework.db").resolve()

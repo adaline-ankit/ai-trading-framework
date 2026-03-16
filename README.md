@@ -147,6 +147,7 @@ ai-trading analyze INFY
 ai-trading backtest INFY
 ai-trading replay <run-id>
 ai-trading benchmark INFY
+ai-trading invest 10000 INFY TCS SBIN --broker PAPER
 ai-trading sandbox
 ai-trading deploy
 ```
