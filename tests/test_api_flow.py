@@ -2,7 +2,14 @@ from fastapi.testclient import TestClient
 
 from ai_trading_framework.api.app import create_app
 from ai_trading_framework.core.runtime.settings import get_settings
-from ai_trading_framework.models import BrokerAuthSession, BrokerName, utcnow
+from ai_trading_framework.models import (
+    AssetClass,
+    BrokerAuthSession,
+    BrokerName,
+    InstrumentDescriptor,
+    Position,
+    utcnow,
+)
 
 
 def test_api_paper_execution_and_telegram_webhook(tmp_path, monkeypatch):
@@ -244,6 +251,90 @@ def test_zerodha_callback_persists_broker_session(tmp_path, monkeypatch):
     reloaded_session = runtime.run_store.get_broker_session(BrokerName.ZERODHA)
     assert reloaded_session is not None
     assert reloaded_session.access_token == "access-token"
+
+
+def test_multi_asset_zerodha_endpoints(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'framework.db'}")
+    monkeypatch.delenv("AUTH_MODE", raising=False)
+    get_settings.cache_clear()
+    app = create_app()
+    runtime = app.state.runtime
+
+    async def fake_list_instruments(query=None, exchange=None, segment=None, limit=200):
+        return [
+            InstrumentDescriptor(
+                broker=BrokerName.ZERODHA,
+                symbol="NIFTY24MARFUT",
+                tradingsymbol="NIFTY24MARFUT",
+                exchange="NFO",
+                segment="NFO-FUT",
+                asset_class=AssetClass.FUTURE,
+                instrument_type="FUTIDX",
+            )
+        ]
+
+    async def fake_list_mutual_funds(query=None, limit=200):
+        return [
+            InstrumentDescriptor(
+                broker=BrokerName.ZERODHA,
+                symbol="INF179KC1HP0",
+                tradingsymbol="INF179KC1HP0",
+                name="Sample Index Fund",
+                exchange="MF",
+                segment="MF",
+                asset_class=AssetClass.MUTUAL_FUND,
+                instrument_type="MF",
+            )
+        ]
+
+    async def fake_holdings():
+        return [
+            Position(
+                symbol="NIFTYBEES",
+                quantity=10.0,
+                average_price=250.0,
+                market_price=255.0,
+                asset_class=AssetClass.ETF,
+            )
+        ]
+
+    async def fake_mf_holdings():
+        return [
+            Position(
+                symbol="INF179KC1HP0",
+                quantity=12.345,
+                average_price=42.0,
+                market_price=43.5,
+                asset_class=AssetClass.MUTUAL_FUND,
+            )
+        ]
+
+    monkeypatch.setattr(runtime.get_zerodha_client(), "list_instruments", fake_list_instruments)
+    monkeypatch.setattr(runtime.get_zerodha_client(), "list_mutual_funds", fake_list_mutual_funds)
+    monkeypatch.setattr(runtime.get_zerodha_client(), "get_holdings", fake_holdings)
+    monkeypatch.setattr(runtime.get_zerodha_client(), "get_mutual_fund_holdings", fake_mf_holdings)
+
+    with TestClient(app) as client:
+        capabilities = client.get("/v1/brokers/ZERODHA/capabilities")
+        assert capabilities.status_code == 200
+        assert capabilities.json()["supports_mutual_funds"] is True
+        assert capabilities.json()["supports_futures"] is True
+
+        instruments = client.get("/v1/brokers/zerodha/instruments?segment=NFO-FUT")
+        assert instruments.status_code == 200
+        assert instruments.json()[0]["asset_class"] == "FUTURE"
+
+        funds = client.get("/v1/brokers/zerodha/mf/instruments")
+        assert funds.status_code == 200
+        assert funds.json()[0]["asset_class"] == "MUTUAL_FUND"
+
+        holdings = client.get("/v1/brokers/zerodha/holdings")
+        assert holdings.status_code == 200
+        assert holdings.json()[0]["asset_class"] == "ETF"
+
+        mf_holdings = client.get("/v1/brokers/zerodha/mf/holdings")
+        assert mf_holdings.status_code == 200
+        assert mf_holdings.json()[0]["quantity"] == 12.345
 
 
 def test_hold_recommendation_cannot_execute(tmp_path, monkeypatch):

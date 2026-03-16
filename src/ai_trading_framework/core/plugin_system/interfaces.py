@@ -8,6 +8,7 @@ from ai_trading_framework.models import (
     BrokerCapabilities,
     EvaluatedSignal,
     ExecutionResult,
+    InstrumentDescriptor,
     MarketContext,
     OrderPreview,
     OrderRequest,
@@ -66,6 +67,28 @@ class BrokerClient(ABC):
 
     @abstractmethod
     async def get_positions(self) -> list[Any]: ...
+
+    async def get_holdings(self) -> list[Any]:
+        return await self.get_positions()
+
+    async def list_instruments(
+        self,
+        query: str | None = None,
+        exchange: str | None = None,
+        segment: str | None = None,
+        limit: int = 200,
+    ) -> list[InstrumentDescriptor]:
+        return []
+
+    async def list_mutual_funds(
+        self,
+        query: str | None = None,
+        limit: int = 200,
+    ) -> list[InstrumentDescriptor]:
+        return []
+
+    async def get_mutual_fund_holdings(self) -> list[Any]:
+        return []
 
 
 class ExecutionPolicy(ABC):

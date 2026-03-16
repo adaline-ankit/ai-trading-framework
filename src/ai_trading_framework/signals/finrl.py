@@ -28,6 +28,7 @@ class FinRLSignalEngine(SignalEngine):
                 EvaluatedSignal(
                     signal_id=signal.signal_id,
                     symbol=signal.symbol,
+                    instrument=getattr(signal, "instrument", None),
                     action=action,
                     confidence=min(max(score, 0.45), 0.95),
                     score=score,

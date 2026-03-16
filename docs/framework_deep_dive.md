@@ -25,6 +25,7 @@ The implementation is structured around a few strict principles:
 - replayable runs via event recording
 - plugin-style extensibility
 - deploy-anywhere runtime surfaces
+- instrument-aware modeling so the framework can span more than cash equities
 
 ## Repository Mental Model
 
@@ -37,6 +38,7 @@ Located in [src/ai_trading_framework/models.py](/Users/ankit/Desktop/trading-age
 These define the framework vocabulary:
 
 - `MarketContext`
+- `InstrumentDescriptor`
 - `Signal`
 - `EvaluatedSignal`
 - `Recommendation`
@@ -189,6 +191,37 @@ The run can later be replayed from stored events. The replay engine exposes:
 ## Current First-Party Components
 
 The current repo ships with these first-party building blocks.
+
+## Multi-Asset Model
+
+The framework now has first-class instrument metadata so the same runtime can represent:
+
+- cash equities
+- ETFs
+- futures
+- options
+- commodities
+- currencies
+- mutual funds
+
+The core building blocks for this are:
+
+- `AssetClass`
+- `BrokerProduct`
+- `OrderVariety`
+- `InstrumentDescriptor`
+
+These live in [src/ai_trading_framework/models.py](/Users/ankit/Desktop/trading-agent-platform/ai-trading-framework/src/ai_trading_framework/models.py) and are intended to stop the framework from collapsing everything into just `symbol`.
+
+On the broker side, the Zerodha adapter now exposes:
+
+- broker capabilities by asset class
+- instrument master search
+- mutual fund instrument search
+- holdings
+- mutual fund holdings
+
+That gives developers enough surface area to build multi-asset operator workflows even before every asset class has a dedicated strategy template.
 
 ### Data Providers
 
@@ -370,6 +403,7 @@ Current gaps or intentionally incomplete areas include:
 - the event bus is in-process, not distributed
 - analytics are present but still lightweight
 - the dashboard is operator-focused rather than a full polished SaaS frontend
+- mutual fund workflows are modeled and discoverable, but the runtime does not enable direct Coin order placement
 
 ## Recommended Reading Path
 

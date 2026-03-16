@@ -27,6 +27,7 @@ class MomentumStrategy(TradingStrategy):
         return [
             Signal(
                 symbol=market_context.symbol,
+                instrument=market_context.instrument,
                 strategy_name=self.name,
                 action=action,
                 confidence=round(confidence, 4),
@@ -53,6 +54,7 @@ class MomentumSignalEngine(SignalEngine):
                 EvaluatedSignal(
                     signal_id=signal.signal_id,
                     symbol=signal.symbol,
+                    instrument=getattr(signal, "instrument", None),
                     action=signal.action,
                     confidence=signal.confidence,
                     score=round(

@@ -46,3 +46,6 @@ class PaperBrokerClient(BaseBrokerClient):
 
     async def get_positions(self) -> list[Position]:
         return list(self.positions)
+
+    async def get_holdings(self) -> list[Position]:
+        return await self.get_positions()

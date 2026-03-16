@@ -129,6 +129,10 @@ class OperatorRuntime:
         broker_client = self.workflow.execution_service.brokers[broker]
         return await broker_client.get_positions()
 
+    async def get_holdings(self, broker: BrokerName):
+        broker_client = self.workflow.execution_service.brokers[broker]
+        return await broker_client.get_holdings()
+
     def get_zerodha_client(self):
         return self.workflow.execution_service.brokers[BrokerName.ZERODHA]
 
@@ -176,7 +180,7 @@ class OperatorRuntime:
         self,
         recommendation_id: str,
         broker: BrokerName,
-        quantity: int,
+        quantity: float,
         order_type: OrderType,
         limit_price: float | None = None,
         stop_price: float | None = None,
@@ -187,6 +191,7 @@ class OperatorRuntime:
             recommendation_id=recommendation.recommendation_id,
             approval_token=approval_token,
             symbol=recommendation.symbol,
+            instrument=recommendation.instrument,
             broker=broker,
             action=recommendation.action,
             quantity=quantity,
@@ -200,7 +205,7 @@ class OperatorRuntime:
         self,
         recommendation_id: str,
         broker: BrokerName,
-        quantity: int,
+        quantity: float,
         order_type: OrderType,
         approval_token: str | None = None,
         limit_price: float | None = None,

@@ -20,6 +20,56 @@ Inspect the current connection with:
 GET /v1/brokers/zerodha
 ```
 
+## Multi-Asset Coverage
+
+The framework now models Zerodha as a multi-asset broker instead of just a stock broker.
+
+Current broker capability metadata covers:
+
+- equities
+- ETFs
+- futures
+- options
+- commodities
+- currencies
+- mutual fund workflows
+
+Inspect broker capabilities with:
+
+```bash
+GET /v1/brokers/ZERODHA/capabilities
+```
+
+## Instrument And Holdings Endpoints
+
+Search the tradable instrument master:
+
+```bash
+GET /v1/brokers/zerodha/instruments?query=NIFTY
+GET /v1/brokers/zerodha/instruments?exchange=NFO&segment=NFO-FUT
+```
+
+Search mutual fund instruments:
+
+```bash
+GET /v1/brokers/zerodha/mf/instruments?query=index
+```
+
+Inspect holdings:
+
+```bash
+GET /v1/brokers/zerodha/holdings
+GET /v1/brokers/zerodha/mf/holdings
+GET /v1/holdings/ZERODHA
+```
+
+These endpoints are useful for:
+
+- building multi-asset operator consoles
+- discovering futures and options contracts
+- reviewing ETF and equity inventory
+- reviewing mutual fund inventory in the same framework runtime
+
 Disconnect with:
 
 ```bash
@@ -27,3 +77,5 @@ POST /v1/brokers/zerodha/disconnect
 ```
 
 The adapter is approval-first by design. Paper mode remains the default runtime.
+
+Direct mutual fund order submission is not enabled in this runtime. The framework exposes mutual fund discovery and holdings workflows so developers can automate review, approval, and portfolio workflows around Coin-linked assets without pretending that every asset class behaves like a normal equity order.

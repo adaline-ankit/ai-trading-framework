@@ -40,6 +40,7 @@ Most AI trading repositories are one-off bots, notebooks, or strategy bundles. `
 - dashboard, Telegram, API, and CLI surfaces on one runtime
 - Postgres-backed operator auth sessions and durable broker connectivity
 - paper broker and approval-gated live broker path
+- instrument-aware broker model for equities, ETFs, futures, options, commodities, currencies, and mutual-fund workflows
 - Railway example deployment, plus generic Docker deployment support
 
 ## Architecture

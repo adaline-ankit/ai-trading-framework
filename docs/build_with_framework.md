@@ -6,6 +6,16 @@ This document explains what developers can build with `ai-trading-framework` and
 
 The framework is broad enough to support several product patterns.
 
+With the new instrument-aware broker layer, the framework is no longer limited to plain cash-equity symbols. It can model and expose workflows around:
+
+- equities
+- ETFs
+- futures
+- options
+- commodities
+- currencies
+- mutual fund discovery and holdings workflows
+
 ### 1. Telegram Trading Copilot
 
 Build a bot that:
@@ -59,7 +69,19 @@ Build and distribute packages like:
 
 This is the ecosystem direction of the framework.
 
-### 6. AI Research Workflow API
+### 6. Multi-Asset Broker Workspace
+
+Build a workspace where operators can:
+
+- inspect the broker's instrument master
+- search futures and options contracts
+- review equity and ETF holdings
+- review mutual fund holdings
+- run approval-based workflows per asset class
+
+This is especially useful for brokers like Zerodha that expose multiple investible segments through one operator account.
+
+### 7. AI Research Workflow API
 
 Use the framework as a backend service that:
 
@@ -99,6 +121,7 @@ Use the framework as a backend service that:
 - you want new execution venues
 - you need venue-specific previews or capabilities
 - you want to support US equities, crypto, or futures
+- you want a broker-specific instrument inventory or holdings model
 
 ## Typical Build Patterns
 
@@ -146,6 +169,17 @@ Use:
 - execution service
 
 In this model the framework acts as an audited approval and execution layer.
+
+### Pattern E: Multi-Asset Operator Desk
+
+Use:
+
+- broker instrument inventory endpoints
+- holdings endpoints
+- approval and risk services
+- dashboard or Telegram operator layer
+
+This pattern is useful when one broker account spans cash equities, F&O, commodities, currencies, and mutual funds.
 
 ## Example: Custom Strategy
 
@@ -227,6 +261,7 @@ When building on the framework, developers should treat these as the stable inte
 - FastAPI API surface
 - event types
 - runtime builder/operator runtime
+- instrument and asset-class models
 
 ## What Developers Should Avoid Depending On Too Tightly
 
@@ -255,6 +290,7 @@ If the framework continues maturing, the ideal end state is:
 - many third-party strategy packages
 - many broker adapters
 - multiple data vendors
+- mature multi-asset strategy templates
 - richer dashboard analytics
 - deeper replay and benchmarking
 - broader geographical coverage

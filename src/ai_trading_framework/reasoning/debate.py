@@ -35,6 +35,7 @@ class DebateReasoningEngine(ReasoningEngine):
         )
         return Recommendation(
             symbol=evaluated_signal.symbol,
+            instrument=evaluated_signal.instrument,
             action=evaluated_signal.action,
             confidence=evaluated_signal.confidence,
             thesis=thesis,

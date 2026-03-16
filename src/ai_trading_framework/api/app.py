@@ -26,7 +26,7 @@ from ai_trading_framework.signals.technical import MomentumSignalEngine, Momentu
 class OrderActionRequest(BaseModel):
     recommendation_id: str
     broker: BrokerName = BrokerName.PAPER
-    quantity: int | None = None
+    quantity: float | None = None
     order_type: OrderType = OrderType.LIMIT
     approval_token: str | None = None
     limit_price: float | None = None
@@ -159,13 +159,13 @@ def create_app() -> FastAPI:
             status_code=401,
         )
 
-    def resolve_quantity(recommendation_id: str, requested: int | None) -> int:
+    def resolve_quantity(recommendation_id: str, requested: float | None) -> float:
         if requested:
             return requested
         risk = runtime.get_risk(recommendation_id)
         if risk and risk.max_position_size:
-            return max(1, min(risk.max_position_size, 1))
-        return 1
+            return float(max(1, min(risk.max_position_size, 1)))
+        return 1.0
 
     def telegram_status_payload() -> dict[str, object]:
         notifier = runtime.notifier
@@ -444,6 +444,11 @@ def create_app() -> FastAPI:
         broker_positions = await runtime.get_positions(broker)
         return [position.model_dump(mode="json") for position in broker_positions]
 
+    @app.get("/v1/holdings/{broker}")
+    async def holdings(broker: BrokerName, _operator=protected_operator):
+        broker_holdings = await runtime.get_holdings(broker)
+        return [position.model_dump(mode="json") for position in broker_holdings]
+
     @app.get("/v1/replay/{run_id}")
     async def replay(run_id: str, _operator=protected_operator):
         replay_payload = runtime.replay(run_id)
@@ -468,8 +473,52 @@ def create_app() -> FastAPI:
         return {
             "connected": client.is_connected(),
             "login_url": client.login_url(),
+            "capabilities": client.capabilities.model_dump(mode="json"),
             "session": zerodha_public_session(),
         }
+
+    @app.get("/v1/brokers/{broker}/capabilities")
+    async def broker_capabilities(broker: BrokerName, _operator=protected_operator):
+        client = runtime.workflow.execution_service.brokers[broker]
+        return client.capabilities.model_dump(mode="json")
+
+    @app.get("/v1/brokers/zerodha/instruments")
+    async def zerodha_instruments(
+        query: str | None = None,
+        exchange: str | None = None,
+        segment: str | None = None,
+        limit: int = 100,
+        _operator=protected_operator,
+    ):
+        instruments = await runtime.get_zerodha_client().list_instruments(
+            query=query,
+            exchange=exchange,
+            segment=segment,
+            limit=min(max(limit, 1), 500),
+        )
+        return [instrument.model_dump(mode="json") for instrument in instruments]
+
+    @app.get("/v1/brokers/zerodha/mf/instruments")
+    async def zerodha_mutual_funds(
+        query: str | None = None,
+        limit: int = 100,
+        _operator=protected_operator,
+    ):
+        instruments = await runtime.get_zerodha_client().list_mutual_funds(
+            query=query,
+            limit=min(max(limit, 1), 500),
+        )
+        return [instrument.model_dump(mode="json") for instrument in instruments]
+
+    @app.get("/v1/brokers/zerodha/holdings")
+    async def zerodha_holdings(_operator=protected_operator):
+        holdings = await runtime.get_zerodha_client().get_holdings()
+        return [position.model_dump(mode="json") for position in holdings]
+
+    @app.get("/v1/brokers/zerodha/mf/holdings")
+    async def zerodha_mutual_fund_holdings(_operator=protected_operator):
+        holdings = await runtime.get_zerodha_client().get_mutual_fund_holdings()
+        return [position.model_dump(mode="json") for position in holdings]
 
     @app.get("/v1/brokers/zerodha/login")
     async def zerodha_login(_operator=protected_operator):

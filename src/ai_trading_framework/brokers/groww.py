@@ -34,3 +34,6 @@ class GrowwBrokerClient(BaseBrokerClient):
 
     async def get_positions(self) -> list:
         return []
+
+    async def get_holdings(self) -> list:
+        return []

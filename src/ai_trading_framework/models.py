@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
@@ -66,6 +66,37 @@ class BrokerName(StrEnum):
     GROWW = "GROWW"
 
 
+class AssetClass(StrEnum):
+    EQUITY = "EQUITY"
+    ETF = "ETF"
+    FUTURE = "FUTURE"
+    OPTION = "OPTION"
+    COMMODITY = "COMMODITY"
+    CURRENCY = "CURRENCY"
+    MUTUAL_FUND = "MUTUAL_FUND"
+    INDEX = "INDEX"
+    BOND = "BOND"
+    UNKNOWN = "UNKNOWN"
+
+
+class BrokerProduct(StrEnum):
+    CNC = "CNC"
+    MIS = "MIS"
+    NRML = "NRML"
+    MTF = "MTF"
+    COIN = "COIN"
+    DELIVERY = "DELIVERY"
+
+
+class OrderVariety(StrEnum):
+    REGULAR = "regular"
+    AMO = "amo"
+    CO = "co"
+    BO = "bo"
+    ICEBERG = "iceberg"
+    AUCTION = "auction"
+
+
 class OrderType(StrEnum):
     MARKET = "MARKET"
     LIMIT = "LIMIT"
@@ -77,9 +108,37 @@ class BrokerCapabilities(BaseModel):
     supports_limit_orders: bool = True
     supports_stop_loss: bool = True
     supports_positions: bool = True
+    supports_holdings: bool = True
+    supports_instruments_master: bool = False
     supports_intraday: bool = False
     supports_websocket: bool = False
     supports_options: bool = False
+    supports_equities: bool = True
+    supports_etfs: bool = False
+    supports_futures: bool = False
+    supports_commodities: bool = False
+    supports_currency: bool = False
+    supports_mutual_funds: bool = False
+
+
+class InstrumentDescriptor(BaseModel):
+    broker: BrokerName | None = None
+    symbol: str
+    tradingsymbol: str | None = None
+    name: str | None = None
+    exchange: str | None = None
+    segment: str | None = None
+    asset_class: AssetClass = AssetClass.UNKNOWN
+    instrument_type: str | None = None
+    instrument_token: str | None = None
+    exchange_token: str | None = None
+    isin: str | None = None
+    expiry: date | None = None
+    strike: float | None = None
+    lot_size: int | None = None
+    tick_size: float | None = None
+    minimum_purchase_amount: float | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProviderCapabilities(BaseModel):
@@ -135,11 +194,14 @@ class SentimentSnapshot(BaseModel):
 
 class Position(BaseModel):
     symbol: str
-    quantity: int
+    quantity: float
     average_price: float
     market_price: float
     unrealized_pnl: float = 0.0
     broker_account_id: str | None = None
+    asset_class: AssetClass = AssetClass.UNKNOWN
+    product: str | None = None
+    instrument: InstrumentDescriptor | None = None
 
 
 class PortfolioState(BaseModel):
@@ -151,6 +213,7 @@ class PortfolioState(BaseModel):
 
 class MarketContext(BaseModel):
     symbol: str
+    instrument: InstrumentDescriptor | None = None
     horizon: str = "swing"
     lookback_days: int = 60
     price: PriceSnapshot
@@ -170,6 +233,7 @@ class FeatureBundle(BaseModel):
 class Signal(BaseModel):
     signal_id: str = Field(default_factory=lambda: str(uuid4()))
     symbol: str
+    instrument: InstrumentDescriptor | None = None
     strategy_name: str
     action: Action
     confidence: float
@@ -180,6 +244,7 @@ class Signal(BaseModel):
 class EvaluatedSignal(BaseModel):
     signal_id: str
     symbol: str
+    instrument: InstrumentDescriptor | None = None
     action: Action
     confidence: float
     score: float
@@ -199,6 +264,7 @@ class Recommendation(BaseModel):
     recommendation_id: str = Field(default_factory=lambda: str(uuid4()))
     run_id: str | None = None
     symbol: str
+    instrument: InstrumentDescriptor | None = None
     action: Action
     confidence: float
     thesis: str
@@ -298,10 +364,13 @@ class OrderRequest(BaseModel):
     recommendation_id: str
     approval_token: str | None = None
     symbol: str
+    instrument: InstrumentDescriptor | None = None
     broker: BrokerName = BrokerName.PAPER
     action: Action
-    quantity: int
+    quantity: float
     order_type: OrderType = OrderType.MARKET
+    product: BrokerProduct = BrokerProduct.CNC
+    variety: OrderVariety = OrderVariety.REGULAR
     limit_price: float | None = None
     stop_price: float | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -312,7 +381,8 @@ class OrderPreview(BaseModel):
     broker: BrokerName
     action: Action
     symbol: str
-    quantity: int
+    instrument: InstrumentDescriptor | None = None
+    quantity: float
     order_type: OrderType
     estimated_notional: float
     warnings: list[str] = Field(default_factory=list)
@@ -325,7 +395,7 @@ class ExecutionResult(BaseModel):
     status: str
     message: str
     fill_price: float | None = None
-    filled_quantity: int | None = None
+    filled_quantity: float | None = None
     broker_order_id: str | None = None
     executed_at: datetime = Field(default_factory=utcnow)
 
