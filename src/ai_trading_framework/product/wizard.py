@@ -64,10 +64,7 @@ def build_wizard_config(
     config.broker_settings.auto_budget_mode = auto_budget
     config.broker_settings.funds_source = "broker" if auto_budget else "manual"
 
-    watchlist_input = _prompt(
-        "Default watchlist "
-        f"[{','.join(config.defaults.watchlist)}]: "
-    )
+    watchlist_input = _prompt(f"Default watchlist [{','.join(config.defaults.watchlist)}]: ")
     if watchlist_input:
         parsed_watchlist = _parse_symbol_list(watchlist_input)
         if parsed_watchlist:

@@ -4,6 +4,11 @@ All notable changes to `ai-trading-framework` are documented in this file.
 
 The format is based on Keep a Changelog and the project follows Semantic Versioning.
 
+## [0.5.1] - 2026-03-17
+
+### Changed
+- Applied formatter-cleanup follow-up for the unified-bot runtime files so GitHub CI is green on the latest public release.
+
 ## [0.5.0] - 2026-03-17
 
 ### Added

@@ -33,6 +33,5 @@ class HelpCapability:
         ]
         return (
             "AI Trading Copilot commands\n"
-            f"Enabled capabilities: {', '.join(enabled)}\n\n"
-            + "\n".join(commands)
+            f"Enabled capabilities: {', '.join(enabled)}\n\n" + "\n".join(commands)
         )

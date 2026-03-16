@@ -242,8 +242,7 @@ class ProductRouter:
         )
         result = cast(dict[str, Any], payload["result"])
         return (
-            f"Execution {result['status']} for {result['recommendation_id']}\n"
-            f"{result['message']}"
+            f"Execution {result['status']} for {result['recommendation_id']}\n{result['message']}"
         )
 
     def _handle_replay(self, parts: list[str]) -> str:
@@ -254,10 +253,7 @@ class ProductRouter:
             return "Run not found."
         events = cast(list[dict[str, Any]], payload.get("events") or [])
         event_names = [event.get("event_type", "unknown") for event in events]
-        return (
-            f"Replay for {parts[0]}\n"
-            f"Events: {', '.join(event_names)}"
-        )
+        return f"Replay for {parts[0]}\nEvents: {', '.join(event_names)}"
 
     def _handle_why(self, parts: list[str]) -> str:
         if not parts:
@@ -306,8 +302,7 @@ class ProductRouter:
     @staticmethod
     def _extract_first_number(text: str) -> float | None:
         digits = "".join(
-            character if (character.isdigit() or character == ".") else " "
-            for character in text
+            character if (character.isdigit() or character == ".") else " " for character in text
         )
         for part in digits.split():
             try:
