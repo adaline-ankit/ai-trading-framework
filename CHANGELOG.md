@@ -4,6 +4,13 @@ All notable changes to `ai-trading-framework` are documented in this file.
 
 The format is based on Keep a Changelog and the project follows Semantic Versioning.
 
+## [0.3.1] - 2026-03-16
+
+### Changed
+- Improved the GitHub repository surface with stronger OSS documentation, contributor guides, metadata, and deployment portability docs.
+- Hardened CI, Docker, release, and CodeQL workflows and fixed the release workflow secret gating bug.
+- Added Docker Compose, Makefile shortcuts, CODEOWNERS, support policy, citation metadata, Dependabot, and issue contact routing.
+
 ## [0.3.0] - 2026-03-16
 
 ### Added

@@ -8,7 +8,7 @@ from ai_trading_framework.models import (
     Signal,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 __all__ = [
     "Action",
