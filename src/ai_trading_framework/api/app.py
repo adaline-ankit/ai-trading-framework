@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
+from ai_trading_framework import __version__
 from ai_trading_framework.api.dashboard import render_operator_console
 from ai_trading_framework.core.orchestration.pipeline import AnalysisPipeline
 from ai_trading_framework.core.runtime.builder import FrameworkBuilder
@@ -57,7 +58,7 @@ def create_app() -> FastAPI:
         reasoning_engine=builder.reasoning_engine,
     )
 
-    app = FastAPI(title="AI Trading Framework", version="0.3.0")
+    app = FastAPI(title="AI Trading Framework", version=__version__)
     app.state.runtime = runtime
     app.state.pipeline = pipeline
 
@@ -185,7 +186,7 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/health")
     async def health():
-        return {"status": "ok"}
+        return {"status": "ok", "version": __version__}
 
     @app.get("/", response_class=HTMLResponse)
     async def dashboard(request: Request):

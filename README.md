@@ -166,6 +166,7 @@ ai-trading deploy
 
 - [Quickstart](docs/quickstart.md)
 - [Architecture](docs/architecture.md)
+- [Public Launch Checklist](docs/public_launch_checklist.md)
 - [Strategy SDK](docs/strategy_sdk.md)
 - [Plugins](docs/plugins.md)
 - [Replay](docs/replay.md)
@@ -177,3 +178,8 @@ ai-trading deploy
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Project Policies
+
+- [Security](SECURITY.md)
+- [Code Of Conduct](CODE_OF_CONDUCT.md)

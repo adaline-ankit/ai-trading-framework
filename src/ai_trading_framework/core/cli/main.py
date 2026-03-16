@@ -5,6 +5,10 @@ import asyncio
 import json
 from pathlib import Path
 
+import uvicorn
+
+from ai_trading_framework import __version__
+from ai_trading_framework.analytics.benchmark import BenchmarkService
 from ai_trading_framework.core.orchestration.pipeline import AnalysisPipeline
 from ai_trading_framework.core.runtime.builder import FrameworkBuilder
 from ai_trading_framework.core.runtime.settings import get_settings
@@ -49,8 +53,26 @@ async def run_scan(symbol: str, simulate_approval: bool = False) -> dict:
     }
 
 
+async def run_benchmark(symbol: str) -> list[dict]:
+    settings = get_settings()
+    builder = FrameworkBuilder(settings)
+    runtime = builder.build()
+    pipeline = build_pipeline(builder)
+    context, recommendations = await pipeline.analyze(symbol)
+    _, recommendations, _ = await runtime.analyze(
+        context,
+        recommendations,
+        broker=BrokerName.PAPER,
+    )
+    return [
+        benchmark.model_dump(mode="json")
+        for benchmark in BenchmarkService().compare(recommendations)
+    ]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ai-trading")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("init")
@@ -67,9 +89,16 @@ def main() -> None:
     replay_parser = subparsers.add_parser("replay")
     replay_parser.add_argument("run_id")
 
-    subparsers.add_parser("benchmark")
+    benchmark_parser = subparsers.add_parser("benchmark")
+    benchmark_parser.add_argument("symbol", nargs="?", default="INFY")
+
     subparsers.add_parser("sandbox")
-    subparsers.add_parser("run")
+
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--host", default=None)
+    run_parser.add_argument("--port", type=int, default=None)
+    run_parser.add_argument("--reload", action="store_true")
+
     subparsers.add_parser("deploy")
 
     args = parser.parse_args()
@@ -93,15 +122,24 @@ def main() -> None:
         print(json.dumps(payload, indent=2))
         return
     if args.command == "benchmark":
-        print(json.dumps(asyncio.run(run_scan("INFY")), indent=2))
+        print(json.dumps(asyncio.run(run_benchmark(args.symbol)), indent=2))
         return
     if args.command == "sandbox":
         db_path = Path("ai_trading_framework.db").resolve()
-        print(f"Sandbox ready. Local SQLite store: {db_path}")
+        print(
+            "Sandbox ready.\n"
+            f"Local SQLite store: {db_path}\n"
+            "Start the runtime with: ai-trading run --reload"
+        )
         return
     if args.command == "run":
-        print(
-            "Run the API with: uvicorn ai_trading_framework.api.app:create_app --factory --reload"
+        settings = get_settings()
+        uvicorn.run(
+            "ai_trading_framework.api.app:create_app",
+            factory=True,
+            host=args.host or settings.api_host,
+            port=args.port or settings.api_port,
+            reload=args.reload,
         )
         return
     if args.command == "deploy":
