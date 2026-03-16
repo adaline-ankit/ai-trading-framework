@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: AI Trading Framework
+message: "If you use this framework in research or public work, please cite the repository."
+type: software
+authors:
+  - family-names: Prasad
+    given-names: Ankit Sonal
+repository-code: https://github.com/adaline-ankit/ai-trading-framework
+license: Apache-2.0
+version: 0.3.0

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support and Usage Questions
+    url: https://github.com/adaline-ankit/ai-trading-framework/blob/main/SUPPORT.md
+    about: Search existing issues and docs before opening a new support request.
+  - name: Security Policy
+    url: https://github.com/adaline-ankit/ai-trading-framework/blob/main/SECURITY.md
+    about: Report sensitive security issues privately using the security policy.

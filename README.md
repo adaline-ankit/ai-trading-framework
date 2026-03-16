@@ -3,8 +3,10 @@
 [![CI](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/ci.yml)
 [![Docker](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/docker.yml/badge.svg)](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/docker.yml)
 [![Release](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/release.yml/badge.svg)](https://github.com/adaline-ankit/ai-trading-framework/actions/workflows/release.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 
-Open-source framework for building AI trading copilots with replayable workflows, deterministic guardrails, human approval, and broker execution adapters.
+Open-source framework for building approval-first AI trading copilots, Telegram trading assistants, and replayable trading workflows.
 
 This project is not an autonomous stock picker. The default operating model is:
 
@@ -12,32 +14,47 @@ This project is not an autonomous stock picker. The default operating model is:
 
 ## Why This Exists
 
-Most AI trading repos are either notebooks, strategy bundles, or single-purpose bots. `ai-trading-framework` is intended to be the reusable layer underneath:
+Most AI trading repositories are one-off bots, notebooks, or strategy bundles. `ai-trading-framework` is intended to be the reusable layer underneath:
 
-- Telegram trading assistants
-- approval-first broker execution workflows
+- Telegram-first trading assistants
+- human-in-the-loop broker execution systems
 - AI research and signal copilots
 - paper trading and replayable operator simulations
-- plugin ecosystems for strategies, brokers, data providers, and models
+- plugin ecosystems for strategies, brokers, data providers, and reasoning engines
+
+## What You Can Build With It
+
+- approval-first AI trading copilots
+- Telegram trading operators
+- research and signal pipelines
+- paper-trading sandboxes
+- broker-connected operator consoles
+- plugin packages for strategies, brokers, and providers
 
 ## Core Capabilities
 
 - Strategy SDK for one-file strategy authoring
-- Plugin interfaces for strategies, providers, brokers, notifiers, risk policies, and LLMs
-- Event-driven workflow engine with replay support
-- Approval-first execution model for non-paper brokers
-- Telegram, dashboard, API, and CLI surfaces on one runtime
+- plugin interfaces for strategies, providers, brokers, notifiers, risk policies, and LLMs
+- event-driven workflow engine with replay support
+- explainability and deterministic risk policy chain
+- dashboard, Telegram, API, and CLI surfaces on one runtime
 - Postgres-backed operator auth sessions and durable broker connectivity
-- Explainability engine with `why_this_trade`, signal, and risk sections
-- Risk policy chain with deterministic guardrails
-- Sandbox mode, benchmarking, and paper trading
-- India-first examples with market-agnostic framework interfaces
+- paper broker and approval-gated live broker path
+- Railway example deployment, plus generic Docker deployment support
 
 ## Architecture
 
-```text
-Data -> Features -> Strategy SDK -> Signal Engines -> AI Reasoning
-     -> Explainability -> Risk Policy Chain -> Approval -> Execution -> Analytics
+```mermaid
+flowchart TD
+    A["Data Providers"] --> B["Feature + Strategy SDK"]
+    B --> C["Signal Engines"]
+    C --> D["Reasoning Engine"]
+    D --> E["Explainability"]
+    E --> F["Risk Policy Chain"]
+    F --> G["Approval Service"]
+    G --> H["Execution Service"]
+    H --> I["Analytics + Replay"]
+    J["Telegram / Dashboard / CLI / API"] --> G
 ```
 
 For a fuller view, see [docs/architecture.md](docs/architecture.md).
@@ -62,10 +79,10 @@ uv run ai-trading sandbox
 uv run ai-trading scan INFY
 ```
 
-### 4. Run the API
+### 4. Start the API
 
 ```bash
-uv run uvicorn ai_trading_framework.api.app:create_app --factory --reload
+uv run ai-trading run --reload
 ```
 
 ### 5. Run tests
@@ -74,86 +91,64 @@ uv run uvicorn ai_trading_framework.api.app:create_app --factory --reload
 uv run pytest
 ```
 
+Shortcut targets are also available:
+
+```bash
+make dev
+make check
+make run
+```
+
+For a fuller local path, see [docs/quickstart.md](docs/quickstart.md).
+
+## Deployment
+
+The framework is deployable anywhere a Python app or container can run.
+
+- generic deployment guide: [docs/deployment.md](docs/deployment.md)
+- Railway example: [docs/deployment_railway.md](docs/deployment_railway.md)
+- Docker image: [deploy/docker/Dockerfile](deploy/docker/Dockerfile)
+- local stack: [docker-compose.yml](docker-compose.yml)
+
+Railway is included as a fast hosted example, not a platform requirement.
+
 ## Authentication
 
-The framework now supports scalable operator auth for Railway and other hosted deployments.
+The runtime supports:
 
-- `AUTH_MODE=PASSWORD` for a single-admin bootstrap
+- `AUTH_MODE=PASSWORD` for bootstrap or single-admin deployments
 - `AUTH_MODE=OIDC` for external identity providers
-- `AUTH_MODE=HYBRID` for OIDC plus a password fallback
-- Operator sessions are stored in the database, not on local disk
-- Zerodha connection state is also stored in the database, so deploys do not lose broker auth
+- `AUTH_MODE=HYBRID` for OIDC with a password fallback
 
-For Railway deployments, the recommended pattern is:
+Operator sessions are stored in the database, not on disk. Broker connection state is also persisted in Postgres.
 
-- Railway Postgres for runtime state
-- OIDC for operator sign-in
-- Telegram webhook secret for bot ingress
-- no persistent volume for auth/session state
+## Telegram And Operator UX
+
+The framework ships with:
+
+- Telegram webhook and outbound bot support
+- inline Telegram approve/reject/why/risk actions
+- interactive production dashboard
+- approval queue, positions, replay, and history reset
+
+Docs:
+
+- [docs/telegram.md](docs/telegram.md)
+- [docs/brokers_zerodha.md](docs/brokers_zerodha.md)
 
 ## CLI
 
 ```bash
 ai-trading init
-ai-trading run
+ai-trading run --reload
 ai-trading scan INFY
 ai-trading analyze INFY
 ai-trading backtest INFY
 ai-trading replay <run-id>
-ai-trading benchmark
+ai-trading benchmark INFY
 ai-trading sandbox
 ai-trading deploy
 ```
-
-## What Ships In v1
-
-- Strategy SDK
-- Event bus
-- Explainability engine
-- Replay engine
-- Risk policy chain
-- Paper broker
-- Zerodha adapter
-- Telegram notifier
-- FastAPI runtime
-- CLI
-- Railway deployment files
-- GitHub Actions for CI, Docker build, and releases
-
-## Operator APIs
-
-- `GET /v1/auth/providers`
-- `GET /v1/auth/me`
-- `POST /v1/auth/login`
-- `GET /v1/auth/login/{provider}`
-- `GET /v1/auth/callback/{provider}`
-- `POST /v1/auth/logout`
-- `GET /v1/dashboard/bootstrap`
-- `POST /v1/history/clear`
-- `GET /v1/scan/{symbol}`
-- `GET /v1/recommendations`
-- `GET /v1/recommendations/{id}`
-- `POST /v1/recommendations/{id}/approve`
-- `POST /v1/recommendations/{id}/reject`
-- `POST /v1/orders/preview`
-- `POST /v1/orders/submit`
-- `GET /v1/positions/{broker}`
-- `GET /v1/replay/{run_id}`
-- `GET /v1/brokers/zerodha`
-- `GET /v1/brokers/zerodha/login`
-- `GET /v1/brokers/zerodha/callback`
-- `POST /v1/brokers/zerodha/disconnect`
-- `GET /v1/telegram/status`
-- `POST /v1/telegram/setup`
-- `POST /v1/telegram/webhook/{secret}`
-
-## Safety Model
-
-- Human-in-the-loop by default
-- Approval is mandatory for non-paper execution
-- Deterministic risk policies run before execution
-- Approval tokens are single-use and auditable
-- Replay and event history are first-class features
 
 ## Examples
 
@@ -162,24 +157,53 @@ ai-trading deploy
 - [examples/custom_strategy](examples/custom_strategy)
 - [examples/sandbox_demo](examples/sandbox_demo)
 
-## Documentation
+## Docs
 
 - [Quickstart](docs/quickstart.md)
 - [Architecture](docs/architecture.md)
-- [Public Launch Checklist](docs/public_launch_checklist.md)
+- [Deployment](docs/deployment.md)
+- [Railway Deployment](docs/deployment_railway.md)
 - [Strategy SDK](docs/strategy_sdk.md)
 - [Plugins](docs/plugins.md)
 - [Replay](docs/replay.md)
 - [Explainability](docs/explainability.md)
 - [Telegram](docs/telegram.md)
 - [Zerodha](docs/brokers_zerodha.md)
-- [Railway Deployment](docs/deployment_railway.md)
+- [Public Launch Checklist](docs/public_launch_checklist.md)
+
+## Project Status
+
+Current strengths:
+
+- strong paper-trading and operator workflow support
+- replayable, approval-first execution model
+- Telegram and dashboard operator surfaces
+- plugin-oriented framework structure
+
+Remaining external or optional steps for a fully complete launch:
+
+- fully verified live Zerodha execution on the production account
+- optional OIDC provider setup for multi-user SSO
+- optional PyPI publish credentials
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Start with:
 
-## Project Policies
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [SECURITY.md](SECURITY.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [SUPPORT.md](SUPPORT.md)
 
-- [Security](SECURITY.md)
-- [Code Of Conduct](CODE_OF_CONDUCT.md)
+## Community Health
+
+This repository includes:
+
+- issue templates
+- PR template
+- security policy
+- code of conduct
+- release automation
+- dependency update automation
+- CodeQL security scanning

@@ -4,17 +4,27 @@
 uv sync --extra dev
 uv run ai-trading sandbox
 uv run ai-trading scan INFY
-uv run uvicorn ai_trading_framework.api.app:create_app --factory --reload
+uv run ai-trading run --reload
 ```
 
 The default runtime uses demo providers, paper execution, SQLite persistence, and approval-first workflows.
+
+## Local Hosted Stack
+
+Start Postgres plus the app with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://127.0.0.1:8000`.
 
 ## Paper Trading End-To-End
 
 1. Start the API:
 
 ```bash
-uv run uvicorn ai_trading_framework.api.app:create_app --factory --reload
+uv run ai-trading run --reload
 ```
 
 2. Generate a recommendation:

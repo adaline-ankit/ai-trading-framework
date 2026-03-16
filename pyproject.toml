@@ -4,8 +4,20 @@ version = "0.3.0"
 description = "Open-source AI trading workflow framework with human-in-the-loop execution."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "Codex" }]
+keywords = ["ai", "trading", "telegram", "fastapi", "framework", "workflow"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Framework :: FastAPI",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+urls = { Homepage = "https://github.com/adaline-ankit/ai-trading-framework", Repository = "https://github.com/adaline-ankit/ai-trading-framework", Documentation = "https://github.com/adaline-ankit/ai-trading-framework/tree/main/docs", Issues = "https://github.com/adaline-ankit/ai-trading-framework/issues" }
 dependencies = [
   "fastapi>=0.115.0",
   "httpx>=0.28.0",

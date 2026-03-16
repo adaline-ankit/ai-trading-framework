@@ -1,4 +1,6 @@
-# Railway Deployment
+# Railway Example Deployment
+
+Railway is a fast hosted example for the operator runtime. It is not the only supported deployment target.
 
 Railway should host the operator runtime as a stateless FastAPI service backed by Railway Postgres.
 

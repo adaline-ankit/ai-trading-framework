@@ -75,9 +75,7 @@ class OperatorAuthService:
 
     def bootstrap_password_admin(self) -> OperatorIdentity | None:
         if not (
-            self.supports_password()
-            and self.settings.admin_email
-            and self.settings.admin_password
+            self.supports_password() and self.settings.admin_email and self.settings.admin_password
         ):
             return None
         operator = self.store.get_operator_by_email(self.settings.admin_email)
@@ -101,8 +99,10 @@ class OperatorAuthService:
         if not self.supports_password():
             raise OperatorAuthError("Password authentication is not enabled.")
         operator = self.store.get_operator_by_email(email)
-        if not operator or not operator.password_hash or not self.verify_password(
-            password, operator.password_hash
+        if (
+            not operator
+            or not operator.password_hash
+            or not self.verify_password(password, operator.password_hash)
         ):
             raise OperatorAuthError("Invalid credentials.")
         return self._create_session(operator, auth_provider="password")

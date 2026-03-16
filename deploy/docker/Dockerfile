@@ -1,10 +1,15 @@
 FROM python:3.11-slim
 
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-COPY . .
+RUN pip install --no-cache-dir uv
 
-RUN pip install --no-cache-dir uv \
-    && uv pip install --system .[dev]
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
 
-CMD ["sh", "-c", "uvicorn ai_trading_framework.api.app:create_app --factory --host 0.0.0.0 --port ${PORT:-8000}"]
+RUN uv pip install --system .
+
+CMD ["sh", "-c", "ai-trading run --host 0.0.0.0 --port ${PORT:-8000}"]
