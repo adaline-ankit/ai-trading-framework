@@ -2,12 +2,38 @@
 
 ```bash
 uv sync --extra dev
+uv run ai-trading init my-bot --template paper-sandbox
+cd my-bot
+cp .env.example .env
+uv run ai-trading doctor
 uv run ai-trading sandbox
 uv run ai-trading scan INFY
+uv run ai-trading recommend
+uv run ai-trading watchlist add SBIN
 uv run ai-trading run --reload
 ```
 
 The default runtime uses demo providers, paper execution, SQLite persistence, and approval-first workflows.
+
+## Product-Style Local Bot Setup
+
+The fastest way to use the framework as a user-facing product is to scaffold a bot project first:
+
+```bash
+uv run ai-trading init my-bot --template investor-copilot
+cd my-bot
+cp .env.example .env
+uv run ai-trading doctor
+uv run ai-trading status
+```
+
+The generated project includes:
+
+- `bot.yaml` for bot capabilities and defaults
+- `.env.example` for runtime secrets
+- `strategies/` for custom strategy files
+- `prompts/` for future AI prompt overrides
+- `state/` for local state artifacts
 
 ## Local Hosted Stack
 

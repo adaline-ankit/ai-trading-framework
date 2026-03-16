@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     api_port: int = Field(default=8000, alias="API_PORT")
     database_url: str = Field(default="sqlite:///./ai_trading_framework.db", alias="DATABASE_URL")
     public_base_url: str = Field(default="http://127.0.0.1:8000", alias="PUBLIC_BASE_URL")
+    bot_config_path: str = Field(default="bot.yaml", alias="BOT_CONFIG_PATH")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_reasoning_model: str = Field(default="gpt-5", alias="OPENAI_REASONING_MODEL")
     telegram_bot_token: str | None = Field(default=None, alias="TELEGRAM_BOT_TOKEN")

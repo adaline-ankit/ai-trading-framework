@@ -444,9 +444,7 @@ class ZerodhaBrokerClient(BaseBrokerClient):
         filtered = instruments
         if segment:
             segment_upper = segment.upper()
-            filtered = [
-                item for item in filtered if (item.segment or "").upper() == segment_upper
-            ]
+            filtered = [item for item in filtered if (item.segment or "").upper() == segment_upper]
         if query:
             query_upper = query.upper()
             filtered = [

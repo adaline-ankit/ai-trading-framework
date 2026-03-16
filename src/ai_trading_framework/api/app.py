@@ -20,6 +20,7 @@ from ai_trading_framework.data.providers.demo import (
     DemoSentimentProvider,
 )
 from ai_trading_framework.models import BrokerName, OrderType
+from ai_trading_framework.product import ProductRouter, load_bot_config
 from ai_trading_framework.signals.finrl import FinRLSignalEngine
 from ai_trading_framework.signals.technical import MomentumSignalEngine, MomentumStrategy
 
@@ -69,6 +70,12 @@ def create_app() -> FastAPI:
     app.state.runtime = runtime
     app.state.pipeline = pipeline
     app.state.investment_planner = InvestmentPlanner(runtime, pipeline)
+    app.state.bot_config = load_bot_config(settings.bot_config_path)
+    app.state.product_router = ProductRouter(
+        config=app.state.bot_config,
+        runtime=runtime,
+        pipeline=pipeline,
+    )
 
     def current_operator(request: Request):
         auth_service = runtime.auth_service
@@ -186,7 +193,7 @@ def create_app() -> FastAPI:
         }
 
     def default_investment_symbols() -> list[str]:
-        return ["INFY", "TCS", "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN"]
+        return list(app.state.bot_config.defaults.recommendation_universe)
 
     def ensure_allowed_telegram_chat(chat_id: str | None) -> None:
         expected = settings.telegram_default_chat_id
@@ -381,6 +388,31 @@ def create_app() -> FastAPI:
     @app.get("/v1/recommendations")
     async def list_recommendations(_operator=protected_operator):
         return runtime.list_recommendations()
+
+    @app.get("/v1/recommend")
+    async def recommend(
+        broker: BrokerName | None = None,
+        symbols: str | None = None,
+        _operator=protected_operator,
+    ):
+        payload = await app.state.product_router.recommendations.recommend(
+            broker=broker or app.state.bot_config.broker,
+            symbols=[item.strip().upper() for item in symbols.split(",")] if symbols else None,
+            notify=True,
+        )
+        return payload
+
+    @app.get("/v1/watchlist")
+    async def get_watchlist(_operator=protected_operator):
+        return {"items": app.state.product_router.watchlist.get_all()}
+
+    @app.post("/v1/watchlist/{symbol}")
+    async def add_watchlist(symbol: str, _operator=protected_operator):
+        return {"items": app.state.product_router.watchlist.add(symbol)}
+
+    @app.delete("/v1/watchlist/{symbol}")
+    async def remove_watchlist(symbol: str, _operator=protected_operator):
+        return {"items": app.state.product_router.watchlist.remove(symbol)}
 
     @app.get("/v1/recommendations/{identifier}")
     async def get_recommendation(identifier: str, _operator=protected_operator):
@@ -637,6 +669,11 @@ def create_app() -> FastAPI:
                 broker = BrokerName(parts[2].upper())
             context, recommendations = await pipeline.analyze(symbol, broker=broker)
             await runtime.analyze(context, recommendations, broker=broker)
+        routed_response = await app.state.product_router.handle_telegram(text, chat_id=chat_id)
+        if routed_response is not None:
+            if runtime.notifier and chat_id:
+                await runtime.notifier.send_message(routed_response, chat_id=chat_id)
+            return {"ok": True, "response": routed_response}
         elif parts and parts[0].lower() == "/invest":
             if len(parts) < 2:
                 response = "Usage: /invest AMOUNT [SYMBOL ...] [PAPER|ZERODHA]"

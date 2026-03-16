@@ -68,25 +68,36 @@ For a fuller view, see [docs/architecture.md](docs/architecture.md).
 uv sync --extra dev
 ```
 
-### 2. Run local sandbox mode
+### 2. Scaffold a bot project
+
+```bash
+uv run ai-trading init my-bot --template paper-sandbox
+cd my-bot
+cp .env.example .env
+uv run ai-trading doctor
+```
+
+### 3. Run local sandbox mode
 
 ```bash
 uv run ai-trading sandbox
 ```
 
-### 3. Generate a recommendation
+### 4. Generate a recommendation
 
 ```bash
 uv run ai-trading scan INFY
+uv run ai-trading recommend
+uv run ai-trading watchlist add SBIN
 ```
 
-### 4. Start the API
+### 5. Start the API
 
 ```bash
 uv run ai-trading run --reload
 ```
 
-### 5. Run tests
+### 6. Run tests
 
 ```bash
 uv run pytest
@@ -141,6 +152,11 @@ Docs:
 
 ```bash
 ai-trading init
+ai-trading doctor
+ai-trading status
+ai-trading watchlist add INFY
+ai-trading watchlist list
+ai-trading recommend
 ai-trading run --reload
 ai-trading scan INFY
 ai-trading analyze INFY
@@ -148,6 +164,8 @@ ai-trading backtest INFY
 ai-trading replay <run-id>
 ai-trading benchmark INFY
 ai-trading invest 10000 INFY TCS SBIN --broker PAPER
+ai-trading connect-telegram
+ai-trading login-zerodha
 ai-trading sandbox
 ai-trading deploy
 ```

@@ -1,0 +1,28 @@
+name: swing-trader
+mode: local
+broker: PAPER
+live_trading: false
+timezone: Asia/Kolkata
+capabilities:
+  portfolio: false
+  watchlist: true
+  recommendations: true
+  budget_investing: false
+  execution: true
+  replay: true
+telegram:
+  enabled: true
+defaults:
+  watchlist:
+    - INFY
+    - TCS
+    - RELIANCE
+    - HDFCBANK
+    - ICICIBANK
+  recommendation_universe:
+    - INFY
+    - TCS
+    - RELIANCE
+    - HDFCBANK
+    - ICICIBANK
+  default_budget: 15000.0

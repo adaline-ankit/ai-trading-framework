@@ -1,0 +1,28 @@
+name: investor-copilot
+mode: local
+broker: PAPER
+live_trading: false
+timezone: Asia/Kolkata
+capabilities:
+  portfolio: true
+  watchlist: true
+  recommendations: true
+  budget_investing: true
+  execution: true
+  replay: true
+telegram:
+  enabled: true
+defaults:
+  watchlist:
+    - INFY
+    - TCS
+    - RELIANCE
+    - HDFCBANK
+    - SBIN
+  recommendation_universe:
+    - INFY
+    - TCS
+    - RELIANCE
+    - HDFCBANK
+    - SBIN
+  default_budget: 10000.0

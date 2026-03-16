@@ -1,0 +1,24 @@
+name: paper-sandbox
+mode: local
+broker: PAPER
+live_trading: false
+timezone: Asia/Kolkata
+capabilities:
+  portfolio: true
+  watchlist: true
+  recommendations: true
+  budget_investing: true
+  execution: true
+  replay: true
+telegram:
+  enabled: true
+defaults:
+  watchlist:
+    - INFY
+    - TCS
+    - SBIN
+  recommendation_universe:
+    - INFY
+    - TCS
+    - SBIN
+  default_budget: 5000.0

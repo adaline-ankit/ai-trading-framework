@@ -1,6 +1,6 @@
 [project]
 name = "ai-trading-framework"
-version = "0.3.1"
+version = "0.4.0"
 description = "Open-source AI trading workflow framework with human-in-the-loop execution."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -26,6 +26,7 @@ dependencies = [
   "pydantic>=2.10.0",
   "pydantic-settings>=2.8.0",
   "psycopg[binary]>=3.2.5",
+  "pyyaml>=6.0.2",
   "python-multipart>=0.0.20",
   "python-dotenv>=1.0.1",
   "sqlalchemy>=2.0.38",
@@ -38,6 +39,7 @@ dev = [
   "pytest>=8.3.0",
   "pytest-asyncio>=0.25.0",
   "ruff>=0.8.0",
+  "types-PyYAML>=6.0.12.20250915",
 ]
 opentelemetry = [
   "opentelemetry-api>=1.30.0",

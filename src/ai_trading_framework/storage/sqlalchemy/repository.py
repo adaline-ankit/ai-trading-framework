@@ -89,6 +89,13 @@ class BrokerSessionModel(Base):
     raw_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
 
 
+class FrameworkStateModel(Base):
+    __tablename__ = "framework_state"
+
+    state_key: Mapped[str] = mapped_column(String(255), primary_key=True)
+    payload: Mapped[str] = mapped_column(Text, nullable=False)
+
+
 class SQLAlchemyRunStore:
     def __init__(self, database_url: str = "sqlite:///./ai_trading_framework.db") -> None:
         connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
@@ -263,6 +270,36 @@ class SQLAlchemyRunStore:
         with Session(self.engine) as session:
             session.execute(
                 delete(BrokerSessionModel).where(BrokerSessionModel.broker == broker.value)
+            )
+            session.commit()
+
+    def set_state(
+        self,
+        namespace: str,
+        key: str,
+        value: dict | list | str | int | float | bool | None,
+    ) -> None:
+        state_key = f"{namespace}:{key}"
+        payload = json.dumps(value)
+        with Session(self.engine) as session:
+            session.merge(FrameworkStateModel(state_key=state_key, payload=payload))
+            session.commit()
+
+    def get_state(self, namespace: str, key: str, default=None):
+        state_key = f"{namespace}:{key}"
+        with Session(self.engine) as session:
+            model = session.scalar(
+                select(FrameworkStateModel).where(FrameworkStateModel.state_key == state_key)
+            )
+            if not model:
+                return default
+            return json.loads(model.payload)
+
+    def delete_state(self, namespace: str, key: str) -> None:
+        state_key = f"{namespace}:{key}"
+        with Session(self.engine) as session:
+            session.execute(
+                delete(FrameworkStateModel).where(FrameworkStateModel.state_key == state_key)
             )
             session.commit()
 

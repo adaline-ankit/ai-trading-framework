@@ -4,6 +4,18 @@ All notable changes to `ai-trading-framework` are documented in this file.
 
 The format is based on Keep a Changelog and the project follows Semantic Versioning.
 
+## [0.4.0] - 2026-03-17
+
+### Added
+- Product-layer foundations for a unified one-bot experience: bot config, starter templates, persistent watchlists, capability routing, and a Telegram/product router.
+- New CLI workflows for `init`, `doctor`, `status`, `recommend`, `watchlist`, `connect-telegram`, and `login-zerodha`.
+- New API routes for product-style watchlist and recommendation flows.
+- Additional end-to-end tests for project scaffolding, local operator status, watchlist state, and unified Telegram routing.
+
+### Changed
+- Expanded local package dependencies to support YAML-backed bot configuration and typing stubs in CI/dev.
+- Improved the repo docs so the new unified-bot milestone is visible from the README and quickstart flow.
+
 ## [0.3.1] - 2026-03-16
 
 ### Changed
