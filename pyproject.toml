@@ -1,6 +1,6 @@
 [project]
 name = "ai-trading-framework"
-version = "0.4.0"
+version = "0.5.0"
 description = "Open-source AI trading workflow framework with human-in-the-loop execution."
 readme = "README.md"
 requires-python = ">=3.11"

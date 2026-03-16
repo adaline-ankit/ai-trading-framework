@@ -185,6 +185,7 @@ ai-trading deploy
 - [Build With The Framework](docs/build_with_framework.md)
 - [Unified Bot Product Spec](docs/unified_bot_product_spec.md)
 - [Unified Bot Checklist](docs/unified_bot_checklist.md)
+- [Unified Bot End State](docs/unified_bot_end_state.md)
 - [Deployment](docs/deployment.md)
 - [Railway Deployment](docs/deployment_railway.md)
 - [Strategy SDK](docs/strategy_sdk.md)

@@ -134,6 +134,10 @@ class OperatorRuntime:
         broker_client = self.workflow.execution_service.brokers[broker]
         return await broker_client.get_holdings()
 
+    async def get_funds(self, broker: BrokerName):
+        broker_client = self.workflow.execution_service.brokers[broker]
+        return await broker_client.get_funds()
+
     def get_zerodha_client(self):
         return self.workflow.execution_service.brokers[BrokerName.ZERODHA]
 

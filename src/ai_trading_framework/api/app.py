@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import cast
 from urllib.parse import quote_plus
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -249,6 +250,8 @@ def create_app() -> FastAPI:
             ]
         return {
             "recommendations": runtime.list_recommendations(),
+            "bot": app.state.bot_config.model_dump(mode="json"),
+            "watchlist": app.state.product_router.watchlist.get_all(),
             "zerodha": zerodha_status,
             "telegram": telegram_status_payload(),
             "positions": {
@@ -395,12 +398,23 @@ def create_app() -> FastAPI:
         symbols: str | None = None,
         _operator=protected_operator,
     ):
-        payload = await app.state.product_router.recommendations.recommend(
+        payload = await app.state.product_router.recommend_now(
             broker=broker or app.state.bot_config.broker,
             symbols=[item.strip().upper() for item in symbols.split(",")] if symbols else None,
             notify=True,
         )
         return payload
+
+    @app.get("/v1/portfolio/summary")
+    async def portfolio_summary(
+        broker: BrokerName | None = None,
+        _operator=protected_operator,
+    ):
+        return await app.state.product_router.summarize_portfolio(broker)
+
+    @app.get("/v1/help")
+    async def product_help(_operator=protected_operator):
+        return {"message": app.state.product_router.help.render()}
 
     @app.get("/v1/watchlist")
     async def get_watchlist(_operator=protected_operator):
@@ -512,13 +526,12 @@ def create_app() -> FastAPI:
 
     @app.post("/v1/investment-plan")
     async def investment_plan(request: InvestmentPlanRequest, _operator=protected_operator):
-        symbols = request.symbols or default_investment_symbols()
-        plan = await app.state.investment_planner.plan(
+        return await app.state.product_router.plan_investment(
             budget=request.budget,
-            symbols=symbols,
+            symbols=request.symbols or default_investment_symbols(),
             broker=request.broker,
+            prefer_broker_funds=False,
         )
-        return plan.model_dump(mode="json")
 
     @app.get("/v1/brokers/zerodha")
     async def zerodha_status(_operator=protected_operator):
@@ -573,6 +586,11 @@ def create_app() -> FastAPI:
         holdings = await runtime.get_zerodha_client().get_mutual_fund_holdings()
         return [position.model_dump(mode="json") for position in holdings]
 
+    @app.get("/v1/brokers/zerodha/funds")
+    async def zerodha_funds(_operator=protected_operator):
+        funds = await runtime.get_zerodha_client().get_funds()
+        return funds.model_dump(mode="json") if funds else None
+
     @app.get("/v1/brokers/zerodha/login")
     async def zerodha_login(_operator=protected_operator):
         client = runtime.get_zerodha_client()
@@ -625,28 +643,37 @@ def create_app() -> FastAPI:
                     detail="Telegram callback is missing a recommendation id.",
                 )
             if action == "approve":
-                approval = await runtime.approve_with_stored_token(recommendation_id)
-                response = f"Approved {approval.recommendation_id}."
+                response = cast(
+                    str,
+                    await app.state.product_router.handle_telegram(
+                        f"/approve {recommendation_id}",
+                        chat_id=chat_id,
+                    ),
+                )
             elif action == "reject":
-                approval = await runtime.reject_with_stored_token(recommendation_id)
-                response = f"Rejected {approval.recommendation_id}."
+                response = cast(
+                    str,
+                    await app.state.product_router.handle_telegram(
+                        f"/reject {recommendation_id}",
+                        chat_id=chat_id,
+                    ),
+                )
             elif action == "why":
-                recommendation = runtime.get_recommendation(recommendation_id)
-                if recommendation:
-                    response = recommendation.explain().why_this_trade
-                else:
-                    response = "Recommendation not found."
+                response = cast(
+                    str,
+                    await app.state.product_router.handle_telegram(
+                        f"/why {recommendation_id}",
+                        chat_id=chat_id,
+                    ),
+                )
             elif action == "risk":
-                recommendation = runtime.get_recommendation(recommendation_id)
-                if not recommendation:
-                    response = "Recommendation not found."
-                else:
-                    risk = runtime.get_risk(recommendation.recommendation_id)
-                    if not risk:
-                        response = "Risk evaluation not found."
-                    else:
-                        reasons = [reason for check in risk.checks for reason in check.reasons]
-                        response = "\n".join([f"{risk.decision}: {risk.summary}", *reasons])
+                response = cast(
+                    str,
+                    await app.state.product_router.handle_telegram(
+                        f"/risk {recommendation_id}",
+                        chat_id=chat_id,
+                    ),
+                )
             else:
                 response = "Unsupported Telegram action."
             notifier = runtime.notifier
@@ -674,37 +701,6 @@ def create_app() -> FastAPI:
             if runtime.notifier and chat_id:
                 await runtime.notifier.send_message(routed_response, chat_id=chat_id)
             return {"ok": True, "response": routed_response}
-        elif parts and parts[0].lower() == "/invest":
-            if len(parts) < 2:
-                response = "Usage: /invest AMOUNT [SYMBOL ...] [PAPER|ZERODHA]"
-                if runtime.notifier and chat_id:
-                    await runtime.notifier.send_message(response, chat_id=chat_id)
-                return {"ok": True, "response": response}
-            try:
-                budget = float(parts[1])
-            except ValueError as exc:
-                raise HTTPException(status_code=400, detail="Budget must be numeric.") from exc
-            broker = BrokerName.PAPER
-            raw_symbols = parts[2:]
-            if raw_symbols and raw_symbols[-1].upper() in {"PAPER", "ZERODHA"}:
-                broker = BrokerName(raw_symbols.pop().upper())
-            symbols = [symbol.upper() for symbol in raw_symbols] or default_investment_symbols()
-            plan = await app.state.investment_planner.plan(
-                budget=budget,
-                symbols=symbols,
-                broker=broker,
-            )
-            if plan.selected:
-                response = (
-                    f"Best idea: {plan.selected.symbol} at {plan.selected.confidence:.0%} "
-                    f"confidence. Suggested quantity: {plan.selected.suggested_quantity}. "
-                    f"Approval token: {(plan.approval.token if plan.approval else 'pending')}."
-                )
-            else:
-                response = plan.summary
-            if runtime.notifier and chat_id:
-                await runtime.notifier.send_message(response, chat_id=chat_id)
-            return {"ok": True, "response": response}
         response = await runtime.handle_telegram_command(text, chat_id=chat_id)
         return {"ok": True, "response": response}
 

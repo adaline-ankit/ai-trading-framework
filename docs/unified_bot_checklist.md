@@ -72,58 +72,72 @@ This checklist tracks the work needed to turn the current framework into one ins
 
 ### Product Layer
 
-- [ ] add `src/ai_trading_framework/product/`
-- [ ] add product config model
-- [ ] add generated user project layout
-- [ ] add product templates as starter configs
-- [ ] add persistent user state for watchlist and preferences
+- [x] add `src/ai_trading_framework/product/`
+- [x] add product config model
+- [x] add generated user project layout
+- [x] add product templates as starter configs
+- [x] add persistent user state for watchlist and preferences
 
 ### Setup And Install Experience
 
-- [ ] turn `ai-trading init` into a real interactive wizard
-- [ ] generate `bot.yaml`
-- [ ] generate `.env.example`
-- [ ] generate starter project README
-- [ ] add `ai-trading doctor`
-- [ ] add `ai-trading status`
-- [ ] add `ai-trading connect telegram`
-- [ ] turn `ai-trading login zerodha` into first-class CLI flow
+- [x] turn `ai-trading init` into a real interactive wizard
+- [x] generate `bot.yaml`
+- [x] generate `.env.example`
+- [x] generate starter project README
+- [x] add `ai-trading doctor`
+- [x] add `ai-trading status`
+- [x] add `ai-trading connect telegram`
+- [x] turn `ai-trading login zerodha` into first-class CLI flow
+- [x] add `ai-trading start`
+- [x] add `ai-trading portfolio`
+- [x] add `ai-trading help-bot`
 - [ ] publish package to PyPI
 - [ ] validate `pipx install ai-trading`
 
 ### Unified One-Bot Runtime
 
-- [ ] add intent router
-- [ ] add deterministic command parser
-- [ ] add natural-language fallback classifier
-- [ ] route Telegram through capability modules instead of direct branching in `app.py`
-- [ ] unify CLI, API, and Telegram over the same routed capabilities
+- [x] add intent router
+- [x] add deterministic command parser
+- [x] add natural-language fallback command fallback for core prompts
+- [x] route Telegram through capability modules instead of direct branching in `app.py`
+- [x] unify CLI, API, and Telegram over the same routed capabilities
+- [ ] add true LLM-backed intent classification fallback beyond the current rule-based parser
 
 ### Capability Modules
 
-- [ ] portfolio module
-- [ ] watchlist module
-- [ ] recommendation module
-- [ ] execution module
-- [ ] replay module
-- [ ] help module
+- [x] portfolio module
+- [x] watchlist module
+- [x] recommendation module
+- [x] execution module
+- [x] replay module
+- [x] help module
+- [x] invest module
 
 ### Portfolio Intelligence
 
-- [ ] Zerodha funds/margins sync
-- [ ] auto-budget mode using available cash
+- [x] Zerodha funds/margins sync
+- [x] auto-budget mode using available cash
+- [x] paper broker funds support
 - [ ] holdings-aware recommendations
 - [ ] allocation across multiple ideas, not just best single idea
 - [ ] rebalance suggestions
 
 ### Telegram UX
 
-- [ ] `/watchlist add`
-- [ ] `/watchlist remove`
-- [ ] `/watchlist`
-- [ ] `/recommend`
-- [ ] `/holdings`
-- [ ] `/replay`
+- [x] `/watchlist add`
+- [x] `/watchlist remove`
+- [x] `/watchlist`
+- [x] `/recommend`
+- [x] `/holdings`
+- [x] `/portfolio`
+- [x] `/positions`
+- [x] `/invest`
+- [x] `/replay`
+- [x] `/help`
+- [x] `/approve`
+- [x] `/reject`
+- [x] `/preview`
+- [x] `/submit`
 - [ ] richer inline action flows
 - [ ] daily briefing mode
 - [ ] cleaner human-readable summaries
@@ -139,9 +153,10 @@ This checklist tracks the work needed to turn the current framework into one ins
 
 ### Documentation
 
-- [ ] setup wizard docs
-- [ ] product quickstart for end users
+- [x] setup wizard docs
+- [x] product quickstart for end users
 - [ ] “build your bot in 10 minutes” tutorial
+- [x] end-state product doc
 - [ ] screenshots/GIFs for README and docs
 - [ ] docs site beyond markdown files
 
@@ -149,8 +164,16 @@ This checklist tracks the work needed to turn the current framework into one ins
 
 - [ ] fully verify live Zerodha execution on the production account
 - [ ] implement richer live order status sync
-- [ ] implement broker funds and margin endpoints
+- [x] implement broker funds and margin endpoints
 - [ ] add stronger execution telemetry
+
+### External Inputs Still Needed
+
+- [ ] update the Zerodha Kite app redirect URL to the framework callback URL
+- [ ] complete a live Zerodha login on the framework-owned runtime
+- [ ] fix the Railway service/domain mapping so the framework domain serves this repo instead of the older platform app
+- [ ] provide OIDC provider details if you want SSO instead of password auth
+- [ ] provide PyPI trusted publishing or package publish credentials if you want public package publishing
 
 ## Recommended Next Milestone
 
@@ -158,14 +181,15 @@ The best next milestone is:
 
 ### Milestone: First Unified Bot Product
 
-- [ ] `ai-trading init` wizard
-- [ ] `bot.yaml`
-- [ ] watchlist persistence
-- [ ] `/recommend`
-- [ ] `/portfolio`
-- [ ] `/invest`
-- [ ] `ai-trading doctor`
-- [ ] `ai-trading connect telegram`
-- [ ] `ai-trading login zerodha`
+- [x] `ai-trading init` wizard
+- [x] `bot.yaml`
+- [x] watchlist persistence
+- [x] `/recommend`
+- [x] `/portfolio`
+- [x] `/invest`
+- [x] `ai-trading doctor`
+- [x] `ai-trading connect telegram`
+- [x] `ai-trading login zerodha`
+- [x] `ai-trading start`
 
 If that milestone is complete, the framework will stop feeling like only a developer toolkit and start feeling like a real installable product.

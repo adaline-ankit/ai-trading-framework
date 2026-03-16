@@ -6,6 +6,7 @@ from typing import Any
 
 from ai_trading_framework.models import (
     BrokerCapabilities,
+    BrokerFunds,
     EvaluatedSignal,
     ExecutionResult,
     InstrumentDescriptor,
@@ -89,6 +90,9 @@ class BrokerClient(ABC):
 
     async def get_mutual_fund_holdings(self) -> list[Any]:
         return []
+
+    async def get_funds(self) -> BrokerFunds | None:
+        return None
 
 
 class ExecutionPolicy(ABC):

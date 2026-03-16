@@ -6,11 +6,14 @@ uv run ai-trading init my-bot --template paper-sandbox
 cd my-bot
 cp .env.example .env
 uv run ai-trading doctor
+uv run ai-trading status
+uv run ai-trading help-bot
 uv run ai-trading sandbox
 uv run ai-trading scan INFY
 uv run ai-trading recommend
+uv run ai-trading portfolio
 uv run ai-trading watchlist add SBIN
-uv run ai-trading run --reload
+uv run ai-trading start --reload
 ```
 
 The default runtime uses demo providers, paper execution, SQLite persistence, and approval-first workflows.
@@ -25,6 +28,8 @@ cd my-bot
 cp .env.example .env
 uv run ai-trading doctor
 uv run ai-trading status
+uv run ai-trading connect-telegram
+uv run ai-trading login-zerodha
 ```
 
 The generated project includes:
@@ -34,6 +39,27 @@ The generated project includes:
 - `strategies/` for custom strategy files
 - `prompts/` for future AI prompt overrides
 - `state/` for local state artifacts
+
+## Telegram Product Usage
+
+Once the runtime is started and Telegram is connected, the unified bot supports:
+
+```text
+/help
+/portfolio
+/holdings
+/watchlist
+/watchlist add INFY
+/recommend
+/invest 25000
+/invest wallet
+/why INFY
+/risk INFY
+/approve RECOMMENDATION_ID
+/preview RECOMMENDATION_ID PAPER 1
+/submit RECOMMENDATION_ID PAPER 1
+/replay RUN_ID
+```
 
 ## Local Hosted Stack
 

@@ -20,6 +20,24 @@ class BotCapabilities(BaseModel):
 class TelegramProductConfig(BaseModel):
     enabled: bool = True
     default_chat_id: str | None = None
+    webhook_mode: str = "webhook"
+
+
+class BrokerProductConfig(BaseModel):
+    funds_source: str = "manual"
+    auto_budget_mode: bool = False
+
+
+class StrategyProductConfig(BaseModel):
+    preset: str = "momentum"
+    custom_strategy_module: str | None = None
+
+
+class RiskProductConfig(BaseModel):
+    max_capital_per_trade: float | None = None
+    max_positions: int | None = None
+    restricted_symbols: list[str] = Field(default_factory=list)
+    approval_required: bool = True
 
 
 class BotDefaults(BaseModel):
@@ -30,6 +48,7 @@ class BotDefaults(BaseModel):
         default_factory=lambda: ["INFY", "TCS", "RELIANCE", "HDFCBANK", "SBIN"]
     )
     default_budget: float = 10000.0
+    recommendation_cadence: str = "manual"
 
 
 class BotConfig(BaseModel):
@@ -38,9 +57,12 @@ class BotConfig(BaseModel):
     broker: BrokerName = BrokerName.PAPER
     live_trading: bool = False
     timezone: str = "Asia/Kolkata"
+    broker_settings: BrokerProductConfig = Field(default_factory=BrokerProductConfig)
     capabilities: BotCapabilities = Field(default_factory=BotCapabilities)
     telegram: TelegramProductConfig = Field(default_factory=TelegramProductConfig)
     defaults: BotDefaults = Field(default_factory=BotDefaults)
+    strategy: StrategyProductConfig = Field(default_factory=StrategyProductConfig)
+    risk: RiskProductConfig = Field(default_factory=RiskProductConfig)
 
 
 def available_templates() -> list[str]:

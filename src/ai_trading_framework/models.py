@@ -204,6 +204,17 @@ class Position(BaseModel):
     instrument: InstrumentDescriptor | None = None
 
 
+class BrokerFunds(BaseModel):
+    broker: BrokerName
+    available_cash: float = 0.0
+    opening_balance: float | None = None
+    live_balance: float | None = None
+    collateral: float = 0.0
+    net: float = 0.0
+    segment: str = "equity"
+    raw: dict[str, Any] = Field(default_factory=dict)
+
+
 class PortfolioState(BaseModel):
     cash_available: float = 1_000_000.0
     positions: list[Position] = Field(default_factory=list)

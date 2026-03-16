@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from ai_trading_framework.brokers.base import BaseBrokerClient
 from ai_trading_framework.data.providers.base import MarketDataProvider
-from ai_trading_framework.models import ExecutionResult, OrderPreview, OrderRequest, Position
+from ai_trading_framework.models import (
+    BrokerFunds,
+    BrokerName,
+    ExecutionResult,
+    OrderPreview,
+    OrderRequest,
+    Position,
+)
 
 
 class PaperBrokerClient(BaseBrokerClient):
@@ -49,3 +56,19 @@ class PaperBrokerClient(BaseBrokerClient):
 
     async def get_holdings(self) -> list[Position]:
         return await self.get_positions()
+
+    async def get_funds(self) -> BrokerFunds:
+        deployed_notional = sum(
+            position.quantity * position.market_price for position in self.positions
+        )
+        available_cash = max(1_000_000.0 - deployed_notional, 0.0)
+        return BrokerFunds(
+            broker=BrokerName.PAPER,
+            available_cash=available_cash,
+            opening_balance=1_000_000.0,
+            live_balance=available_cash,
+            collateral=0.0,
+            net=available_cash,
+            segment="equity",
+            raw={"deployed_notional": round(deployed_notional, 2)},
+        )

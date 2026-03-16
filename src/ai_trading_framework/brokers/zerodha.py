@@ -14,6 +14,7 @@ from ai_trading_framework.models import (
     AssetClass,
     BrokerAuthSession,
     BrokerCapabilities,
+    BrokerFunds,
     BrokerName,
     BrokerProduct,
     ExecutionResult,
@@ -403,6 +404,35 @@ class ZerodhaBrokerClient(BaseBrokerClient):
         rows = await self._fetch_csv("https://api.kite.trade/mf/instruments")
         instruments = [self._mf_instrument_from_csv_row(row) for row in rows]
         return self._filter_instruments(instruments, query=query, segment="MF", limit=limit)
+
+    async def get_funds(self) -> BrokerFunds | None:
+        access_token = self._active_access_token()
+        if not (self.api_key and access_token):
+            return None
+        headers = self._headers(access_token)
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get("https://api.kite.trade/user/margins", headers=headers)
+            response.raise_for_status()
+        except httpx.HTTPError:
+            return None
+        payload = response.json().get("data", {})
+        equity = payload.get("equity") or {}
+        available = equity.get("available") or {}
+        return BrokerFunds(
+            broker=BrokerName.ZERODHA,
+            available_cash=float(available.get("cash") or available.get("live_balance") or 0.0),
+            opening_balance=float(available.get("opening_balance") or 0.0)
+            if available.get("opening_balance") is not None
+            else None,
+            live_balance=float(available.get("live_balance") or 0.0)
+            if available.get("live_balance") is not None
+            else None,
+            collateral=float(available.get("collateral") or 0.0),
+            net=float(equity.get("net") or 0.0),
+            segment="equity",
+            raw=payload,
+        )
 
     def _active_access_token(self) -> str:
         session = self.current_session()

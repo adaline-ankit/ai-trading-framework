@@ -2,6 +2,20 @@
 
 This document describes the next product layer on top of `ai-trading-framework`: one installable bot runtime that exposes multiple investing and trading capabilities through one Telegram bot, one dashboard, and one CLI.
 
+## Status
+
+As of the current implementation checkpoint, the repo now includes:
+
+- `product/config.py`
+- `product/router.py`
+- `product/state.py`
+- `product/wizard.py`
+- templates for `investor-copilot`, `swing-trader`, and `paper-sandbox`
+- capability modules for portfolio, watchlist, recommendation, invest, execution, replay, and help
+- routed Telegram/API/CLI behavior for the main one-bot product flows
+
+This spec remains the target shape, but the items above are no longer future design only.
+
 ## Product Goal
 
 The user should not need to assemble framework pieces manually.

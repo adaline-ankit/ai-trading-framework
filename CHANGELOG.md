@@ -4,6 +4,20 @@ All notable changes to `ai-trading-framework` are documented in this file.
 
 The format is based on Keep a Changelog and the project follows Semantic Versioning.
 
+## [0.5.0] - 2026-03-17
+
+### Added
+- Real unified-bot capability modules for invest, execution, replay, and help flows.
+- Broker funds support for paper trading and Zerodha, including wallet-aware investment planning.
+- Interactive bot-init wizard and new CLI flows for `start`, `portfolio`, and `help-bot`.
+- Product end-state documentation and updated unified-bot checklist/spec alignment docs.
+- Additional API routes for product help, portfolio summary, and Zerodha funds.
+
+### Changed
+- Routed more Telegram, CLI, and API behavior through the product router so the one-bot runtime is more consistent.
+- Expanded bot configuration depth to cover strategy, risk, broker funds source, and Telegram webhook mode.
+- Updated quickstart and product docs to reflect the actual end-to-end user flow and remaining external setup dependencies.
+
 ## [0.4.0] - 2026-03-17
 
 ### Added

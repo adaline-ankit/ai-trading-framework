@@ -163,6 +163,17 @@ def test_cli_init_doctor_status_and_watchlist_commands(tmp_path, monkeypatch, ca
     status_output = json.loads(capsys.readouterr().out)
     assert status_output["bot_name"] == "alpha-bot"
     assert "ITC" in status_output["watchlist"]
+    assert "funds" in status_output
+
+    monkeypatch.setattr(sys, "argv", ["ai-trading", "help-bot"])
+    main()
+    help_output = capsys.readouterr().out
+    assert "/invest <amount|wallet>" in help_output
+
+    monkeypatch.setattr(sys, "argv", ["ai-trading", "portfolio"])
+    main()
+    portfolio_output = json.loads(capsys.readouterr().out)
+    assert portfolio_output["broker"] == "PAPER"
 
 
 def test_unified_watchlist_and_recommendation_routes(tmp_path, monkeypatch):
@@ -199,6 +210,15 @@ def test_unified_watchlist_and_recommendation_routes(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime.notifier, "send_message", fake_send_message)
 
     with TestClient(app) as client:
+        help_response = client.get("/v1/help")
+        assert help_response.status_code == 200
+        assert "/watchlist add SYMBOL" in help_response.json()["message"]
+
+        portfolio = client.get("/v1/portfolio/summary")
+        assert portfolio.status_code == 200
+        assert portfolio.json()["broker"] == "PAPER"
+        assert portfolio.json()["funds"]["available_cash"] > 0
+
         watchlist = client.get("/v1/watchlist")
         assert watchlist.status_code == 200
         assert watchlist.json()["items"] == ["INFY", "TCS"]
@@ -228,3 +248,87 @@ def test_unified_watchlist_and_recommendation_routes(tmp_path, monkeypatch):
         assert telegram_recommend.status_code == 200
         assert "Top idea:" in telegram_recommend.json()["response"]
         assert sent_messages
+
+        natural_language = client.post(
+            "/v1/telegram/webhook/secret",
+            json={"message": {"text": "What should I buy today?", "chat": {"id": 123}}},
+        )
+        assert natural_language.status_code == 200
+        assert "Top idea:" in natural_language.json()["response"]
+
+
+def test_wallet_invest_and_replay_product_routes(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'framework.db'}")
+    bot_config = tmp_path / "bot.yaml"
+    bot_config.write_text(
+        "\n".join(
+            [
+                "name: wallet-bot",
+                "broker: PAPER",
+                "broker_settings:",
+                "  auto_budget_mode: true",
+                "  funds_source: broker",
+                "defaults:",
+                "  watchlist:",
+                "    - INFY",
+                "    - TCS",
+                "  recommendation_universe:",
+                "    - INFY",
+                "    - TCS",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("BOT_CONFIG_PATH", str(bot_config))
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "secret")
+    monkeypatch.setenv("TELEGRAM_DEFAULT_CHAT_ID", "123")
+    get_settings.cache_clear()
+    app = create_app()
+    runtime = app.state.runtime
+
+    class DummyFunds:
+        def __init__(self):
+            self.available_cash = 12000.0
+
+    async def fake_send_message(message: str, chat_id: str | None = None, **kwargs) -> None:
+        return None
+
+    async def fake_get_funds():
+        from ai_trading_framework.models import BrokerFunds, BrokerName
+
+        return BrokerFunds(
+            broker=BrokerName.PAPER,
+            available_cash=12000.0,
+            opening_balance=12000.0,
+            live_balance=12000.0,
+            net=12000.0,
+        )
+
+    monkeypatch.setattr(runtime.notifier, "send_message", fake_send_message)
+    from ai_trading_framework.models import BrokerName
+
+    monkeypatch.setattr(
+        runtime.workflow.execution_service.brokers[BrokerName.PAPER],
+        "get_funds",
+        fake_get_funds,
+    )
+
+    with TestClient(app) as client:
+        scan = client.get("/v1/scan/INFY?broker=PAPER")
+        assert scan.status_code == 200
+        run_id = scan.json()["run_id"]
+
+        invest = client.post(
+            "/v1/telegram/webhook/secret",
+            json={"message": {"text": "/invest wallet INFY TCS PAPER", "chat": {"id": 123}}},
+        )
+        assert invest.status_code == 200
+        assert "Wallet cash:" in invest.json()["response"]
+
+        replay = client.post(
+            "/v1/telegram/webhook/secret",
+            json={"message": {"text": f"/replay {run_id}", "chat": {"id": 123}}},
+        )
+        assert replay.status_code == 200
+        assert "Replay for" in replay.json()["response"]

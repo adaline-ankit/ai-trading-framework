@@ -29,7 +29,9 @@ from ai_trading_framework.product.config import (
     load_template_config,
     save_bot_config,
 )
+from ai_trading_framework.product.router import ProductRouter
 from ai_trading_framework.product.state import WatchlistState
+from ai_trading_framework.product.wizard import build_wizard_config, should_run_interactive_wizard
 from ai_trading_framework.signals.finrl import FinRLSignalEngine
 from ai_trading_framework.signals.technical import MomentumSignalEngine, MomentumStrategy
 
@@ -109,9 +111,11 @@ def main() -> None:
     init_parser.add_argument("--template", default="investor-copilot")
     init_parser.add_argument("--broker", default="PAPER", choices=["PAPER", "ZERODHA"])
     init_parser.add_argument("--path", default=".")
+    init_parser.add_argument("--no-input", action="store_true")
 
     subparsers.add_parser("doctor")
     subparsers.add_parser("status")
+    subparsers.add_parser("help-bot")
 
     scan_parser = subparsers.add_parser("scan")
     scan_parser.add_argument("symbol")
@@ -119,6 +123,9 @@ def main() -> None:
     recommend_parser = subparsers.add_parser("recommend")
     recommend_parser.add_argument("symbols", nargs="*")
     recommend_parser.add_argument("--broker", default="PAPER", choices=["PAPER", "ZERODHA"])
+
+    portfolio_parser = subparsers.add_parser("portfolio")
+    portfolio_parser.add_argument("--broker", default=None, choices=["PAPER", "ZERODHA"])
 
     analyze_parser = subparsers.add_parser("analyze")
     analyze_parser.add_argument("symbol")
@@ -151,6 +158,10 @@ def main() -> None:
     run_parser.add_argument("--host", default=None)
     run_parser.add_argument("--port", type=int, default=None)
     run_parser.add_argument("--reload", action="store_true")
+    start_parser = subparsers.add_parser("start")
+    start_parser.add_argument("--host", default=None)
+    start_parser.add_argument("--port", type=int, default=None)
+    start_parser.add_argument("--reload", action="store_true")
 
     subparsers.add_parser("deploy")
     subparsers.add_parser("connect-telegram")
@@ -164,6 +175,7 @@ def main() -> None:
             template=args.template,
             broker=BrokerName(args.broker),
             base_path=Path(args.path),
+            no_input=args.no_input,
         )
         print(
             f"Initialized bot project at {project_dir}\n"
@@ -181,6 +193,9 @@ def main() -> None:
     if args.command == "status":
         print(json.dumps(_status(), indent=2))
         return
+    if args.command == "help-bot":
+        print(_bot_help())
+        return
     if args.command in {"scan", "analyze", "backtest"}:
         print(
             json.dumps(
@@ -191,6 +206,10 @@ def main() -> None:
         return
     if args.command == "recommend":
         print(json.dumps(asyncio.run(_recommend(args.symbols, BrokerName(args.broker))), indent=2))
+        return
+    if args.command == "portfolio":
+        broker = BrokerName(args.broker) if args.broker else None
+        print(json.dumps(asyncio.run(_portfolio(broker)), indent=2))
         return
     if args.command == "replay":
         runtime = FrameworkBuilder(get_settings()).build()
@@ -232,7 +251,7 @@ def main() -> None:
             "Start the runtime with: ai-trading run --reload"
         )
         return
-    if args.command == "run":
+    if args.command in {"run", "start"}:
         settings = get_settings()
         uvicorn.run(
             "ai_trading_framework.api.app:create_app",
@@ -256,29 +275,44 @@ def _project_config_path(project_dir: Path) -> Path:
     return project_dir / "bot.yaml"
 
 
-def _init_project(name: str, template: str, broker: BrokerName, base_path: Path) -> Path:
+def _init_project(
+    name: str,
+    template: str,
+    broker: BrokerName,
+    base_path: Path,
+    *,
+    no_input: bool,
+) -> Path:
     project_dir = (base_path / name).resolve()
     project_dir.mkdir(parents=True, exist_ok=True)
     (project_dir / "strategies").mkdir(exist_ok=True)
     (project_dir / "prompts").mkdir(exist_ok=True)
     (project_dir / "state").mkdir(exist_ok=True)
-    try:
-        config = load_template_config(template)
-        config.name = name
-        config.broker = broker
-        config.live_trading = broker != BrokerName.PAPER
-    except FileNotFoundError:
-        config = default_bot_config(
+    if should_run_interactive_wizard(no_input=no_input):
+        config = build_wizard_config(
             name=name,
+            template=template,
             broker=broker,
-            live_trading=broker != BrokerName.PAPER,
-            telegram_enabled=True,
+            project_dir=project_dir,
         )
+    else:
+        try:
+            config = load_template_config(template)
+            config.name = name
+            config.broker = broker
+            config.live_trading = broker != BrokerName.PAPER
+        except FileNotFoundError:
+            config = default_bot_config(
+                name=name,
+                broker=broker,
+                live_trading=broker != BrokerName.PAPER,
+                telegram_enabled=True,
+            )
     save_bot_config(config, _project_config_path(project_dir))
     (project_dir / ".env.example").write_text(
         "\n".join(
             [
-                f"BOT_CONFIG_PATH={_project_config_path(project_dir)}",
+                "BOT_CONFIG_PATH=./bot.yaml",
                 "DATABASE_URL=sqlite:///./ai_trading_framework.db",
                 "PUBLIC_BASE_URL=http://127.0.0.1:8000",
                 "TELEGRAM_BOT_TOKEN=",
@@ -305,6 +339,8 @@ def _init_project(name: str, template: str, broker: BrokerName, base_path: Path)
                 "```bash",
                 "cp .env.example .env",
                 "ai-trading doctor",
+                "ai-trading status",
+                "ai-trading help-bot",
                 "ai-trading connect-telegram",
                 "ai-trading login-zerodha",
                 "ai-trading start",
@@ -335,8 +371,11 @@ def _doctor() -> dict[str, object]:
         "config_path": str(config_path.resolve()),
         "bot_name": config.name,
         "broker": config.broker.value,
+        "capabilities": config.capabilities.model_dump(mode="json"),
         "database_url": settings.database_url,
+        "runtime_bootable": True,
         "telegram_ready": telegram_ready,
+        "telegram_enabled_in_config": config.telegram.enabled,
         "zerodha_ready": zerodha_ready,
         "openai_ready": bool(settings.openai_api_key),
         "watchlist_size": len(config.defaults.watchlist),
@@ -349,6 +388,7 @@ def _status() -> dict[str, object]:
     runtime = builder.build()
     config_path, config = _load_local_bot_config()
     watchlist = WatchlistState(runtime.run_store, config.defaults.watchlist).get_all()
+    funds = asyncio.run(runtime.get_funds(config.broker))
     return {
         "config_path": str(config_path.resolve()),
         "bot_name": config.name,
@@ -356,6 +396,9 @@ def _status() -> dict[str, object]:
         "auth_mode": settings.auth_mode,
         "telegram_enabled": bool(settings.telegram_bot_token),
         "zerodha_connected": runtime.get_zerodha_client().is_connected(),
+        "capabilities": config.capabilities.model_dump(mode="json"),
+        "default_budget": config.defaults.default_budget,
+        "funds": funds.model_dump(mode="json") if funds else None,
         "watchlist": watchlist,
         "recommendation_count": len(runtime.list_recommendations()),
     }
@@ -371,8 +414,15 @@ async def _connect_telegram() -> dict[str, object]:
         f"{settings.public_base_url.rstrip('/')}/v1/telegram/webhook/"
         f"{settings.telegram_webhook_secret}"
     )
-    payload = await notifier.set_webhook(webhook_url)
-    return {"webhook_url": webhook_url, "result": payload}
+    payload = await notifier.set_webhook(
+        webhook_url,
+        secret_token=settings.telegram_webhook_secret,
+    )
+    return {
+        "webhook_url": webhook_url,
+        "secret_token": settings.telegram_webhook_secret,
+        "result": payload,
+    }
 
 
 def _login_zerodha() -> dict[str, object]:
@@ -386,7 +436,8 @@ def _login_zerodha() -> dict[str, object]:
             webbrowser.open(url)
         except Exception:
             pass
-    return {"ok": True, "login_url": url}
+    callback_url = f"{settings.public_base_url.rstrip('/')}/v1/brokers/zerodha/callback"
+    return {"ok": True, "login_url": url, "callback_url": callback_url}
 
 
 def _watchlist_command(command: str, symbol: str | None) -> dict[str, object]:
@@ -409,12 +460,26 @@ async def _recommend(symbols: list[str], broker: BrokerName) -> dict[str, object
     runtime = builder.build()
     pipeline = build_pipeline(builder)
     _, config = _load_local_bot_config()
-    watchlist = WatchlistState(runtime.run_store, config.defaults.watchlist)
-    from ai_trading_framework.product.capabilities.recommend import RecommendationCapability
-
-    capability = RecommendationCapability(runtime, pipeline, watchlist)
-    return await capability.recommend(
+    router = ProductRouter(config=config, runtime=runtime, pipeline=pipeline)
+    return await router.recommend_now(
         broker=broker,
         symbols=[symbol.upper() for symbol in symbols] if symbols else None,
         notify=False,
     )
+
+
+async def _portfolio(broker: BrokerName | None) -> dict[str, object]:
+    settings = get_settings()
+    builder = FrameworkBuilder(settings)
+    runtime = builder.build()
+    pipeline = build_pipeline(builder)
+    _, config = _load_local_bot_config()
+    router = ProductRouter(config=config, runtime=runtime, pipeline=pipeline)
+    return await router.summarize_portfolio(broker)
+
+
+def _bot_help() -> str:
+    _, config = _load_local_bot_config()
+    from ai_trading_framework.product.capabilities.help import HelpCapability
+
+    return HelpCapability(config.capabilities).render()
