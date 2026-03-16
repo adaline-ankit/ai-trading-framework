@@ -161,6 +161,8 @@ ai-trading deploy
 
 - [Quickstart](docs/quickstart.md)
 - [Architecture](docs/architecture.md)
+- [Framework Deep Dive](docs/framework_deep_dive.md)
+- [Build With The Framework](docs/build_with_framework.md)
 - [Deployment](docs/deployment.md)
 - [Railway Deployment](docs/deployment_railway.md)
 - [Strategy SDK](docs/strategy_sdk.md)
