@@ -185,15 +185,27 @@ class ProductRouter:
         if not selected:
             return str(payload.get("summary") or "No investment candidate available.")
         funds = cast(dict[str, Any] | None, payload.get("funds"))
+        allocations = cast(list[dict[str, Any]], payload.get("allocations") or [])
+        rebalance_actions = cast(list[dict[str, Any]], payload.get("rebalance_actions") or [])
         wallet_line = (
             f"\nWallet cash: {funds['available_cash']:.2f}" if funds and prefer_wallet else ""
         )
+        allocation_line = ""
+        if allocations:
+            allocation_line = "\nAllocations: " + ", ".join(
+                f"{item['symbol']} {item['target_weight']:.0%}" for item in allocations
+            )
+        rebalance_line = ""
+        if rebalance_actions:
+            rebalance_line = "\nRebalance: " + ", ".join(
+                f"{item['action']} {item['symbol']}" for item in rebalance_actions[:3]
+            )
         return (
             f"Best idea: {selected['symbol']} {selected['action']}\n"
             f"Confidence: {selected['confidence']:.0%}\n"
             f"Suggested quantity: {selected['suggested_quantity']}\n"
             f"Estimated notional: {selected['estimated_notional']:.2f}\n"
-            f"Why: {selected['thesis']}{wallet_line}"
+            f"Why: {selected['thesis']}{wallet_line}{allocation_line}{rebalance_line}"
         )
 
     async def _handle_approve(self, parts: list[str]) -> str:

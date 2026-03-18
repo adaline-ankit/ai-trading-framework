@@ -33,6 +33,12 @@ def test_dashboard_and_telegram_management_routes(tmp_path, monkeypatch):
         assert dashboard.status_code == 200
         assert "Run Scan" in dashboard.text
         assert "Connect Zerodha" in dashboard.text
+        assert "Watchlist" in dashboard.text
+        assert "Investment Planner" in dashboard.text
+
+        bootstrap = client.get("/v1/dashboard/bootstrap")
+        assert bootstrap.status_code == 200
+        assert bootstrap.json()["funds"]["paper"]["available_cash"] > 0
 
         status = client.get("/v1/telegram/status")
         assert status.status_code == 200
@@ -77,6 +83,7 @@ def test_investment_plan_api_and_telegram_command(tmp_path, monkeypatch):
         assert payload["selected"] is not None
         assert payload["selected"]["action"] == "BUY"
         assert payload["selected"]["suggested_quantity"] >= 1
+        assert payload["allocations"]
         assert payload["recommendation"]["symbol"] == payload["selected"]["symbol"]
         assert payload["approval"]["status"] == "PENDING"
 
@@ -287,10 +294,6 @@ def test_wallet_invest_and_replay_product_routes(tmp_path, monkeypatch):
     app = create_app()
     runtime = app.state.runtime
 
-    class DummyFunds:
-        def __init__(self):
-            self.available_cash = 12000.0
-
     async def fake_send_message(message: str, chat_id: str | None = None, **kwargs) -> None:
         return None
 
@@ -305,6 +308,19 @@ def test_wallet_invest_and_replay_product_routes(tmp_path, monkeypatch):
             net=12000.0,
         )
 
+    async def fake_get_holdings():
+        from ai_trading_framework.models import AssetClass, Position
+
+        return [
+            Position(
+                symbol="INFY",
+                quantity=50,
+                average_price=200.0,
+                market_price=250.0,
+                asset_class=AssetClass.EQUITY,
+            )
+        ]
+
     monkeypatch.setattr(runtime.notifier, "send_message", fake_send_message)
     from ai_trading_framework.models import BrokerName
 
@@ -313,11 +329,25 @@ def test_wallet_invest_and_replay_product_routes(tmp_path, monkeypatch):
         "get_funds",
         fake_get_funds,
     )
+    monkeypatch.setattr(
+        runtime.workflow.execution_service.brokers[BrokerName.PAPER],
+        "get_holdings",
+        fake_get_holdings,
+    )
 
     with TestClient(app) as client:
         scan = client.get("/v1/scan/INFY?broker=PAPER")
         assert scan.status_code == 200
         run_id = scan.json()["run_id"]
+
+        plan = client.post(
+            "/v1/investment-plan",
+            json={"budget": 12000, "symbols": ["INFY", "TCS"], "broker": "PAPER"},
+        )
+        assert plan.status_code == 200
+        assert plan.json()["allocations"]
+        assert plan.json()["rebalance_actions"]
+        assert plan.json()["rebalance_actions"][0]["action"] == "TRIM"
 
         invest = client.post(
             "/v1/telegram/webhook/secret",
@@ -325,6 +355,7 @@ def test_wallet_invest_and_replay_product_routes(tmp_path, monkeypatch):
         )
         assert invest.status_code == 200
         assert "Wallet cash:" in invest.json()["response"]
+        assert "Rebalance:" in invest.json()["response"]
 
         replay = client.post(
             "/v1/telegram/webhook/secret",

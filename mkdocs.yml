@@ -1,0 +1,31 @@
+site_name: AI Trading Framework
+site_description: Approval-first AI trading copilot framework with a unified Telegram-first bot runtime.
+site_url: https://github.com/adaline-ankit/ai-trading-framework
+repo_url: https://github.com/adaline-ankit/ai-trading-framework
+repo_name: adaline-ankit/ai-trading-framework
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.tracking
+    - content.code.copy
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Architecture: architecture.md
+  - Build With The Framework: build_with_framework.md
+  - Build Your Bot In 10 Minutes: build_your_bot_in_10_minutes.md
+  - Framework Deep Dive: framework_deep_dive.md
+  - Strategy SDK: strategy_sdk.md
+  - Plugins: plugins.md
+  - Unified Bot:
+      - Product Spec: unified_bot_product_spec.md
+      - Checklist: unified_bot_checklist.md
+      - End State: unified_bot_end_state.md
+  - Replay: replay.md
+  - Explainability: explainability.md
+  - Telegram: telegram.md
+  - Zerodha: brokers_zerodha.md
+  - Deployment: deployment.md
+  - Railway Deployment: deployment_railway.md
+  - Public Launch Checklist: public_launch_checklist.md

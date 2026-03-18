@@ -113,6 +113,13 @@ make run
 
 For a fuller local path, see [docs/quickstart.md](docs/quickstart.md).
 
+To browse the documentation as a local site:
+
+```bash
+uv sync --extra docs
+uv run mkdocs serve
+```
+
 ## Deployment
 
 The framework is deployable anywhere a Python app or container can run.
@@ -142,6 +149,8 @@ The framework ships with:
 - inline Telegram approve/reject/why/risk actions
 - interactive production dashboard
 - approval queue, positions, replay, and history reset
+- watchlist management and investment planner controls
+- holdings-aware multi-idea allocation and rebalance suggestions
 
 Docs:
 
@@ -183,6 +192,7 @@ ai-trading deploy
 - [Architecture](docs/architecture.md)
 - [Framework Deep Dive](docs/framework_deep_dive.md)
 - [Build With The Framework](docs/build_with_framework.md)
+- [Build Your Bot In 10 Minutes](docs/build_your_bot_in_10_minutes.md)
 - [Unified Bot Product Spec](docs/unified_bot_product_spec.md)
 - [Unified Bot Checklist](docs/unified_bot_checklist.md)
 - [Unified Bot End State](docs/unified_bot_end_state.md)

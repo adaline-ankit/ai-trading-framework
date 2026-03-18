@@ -449,6 +449,26 @@ class InvestmentCandidate(BaseModel):
     asset_class: AssetClass = AssetClass.UNKNOWN
 
 
+class AllocationPlanItem(BaseModel):
+    symbol: str
+    recommendation_id: str
+    allocated_budget: float
+    target_weight: float
+    suggested_quantity: float
+    estimated_entry_price: float
+    estimated_notional: float
+    reason: str
+
+
+class RebalanceAction(BaseModel):
+    symbol: str
+    action: str
+    current_weight: float
+    target_weight: float
+    quantity_delta: float
+    reason: str
+
+
 class InvestmentPlan(BaseModel):
     plan_id: str = Field(default_factory=lambda: str(uuid4()))
     broker: BrokerName
@@ -456,6 +476,8 @@ class InvestmentPlan(BaseModel):
     symbols_considered: list[str] = Field(default_factory=list)
     selected: InvestmentCandidate | None = None
     alternatives: list[InvestmentCandidate] = Field(default_factory=list)
+    allocations: list[AllocationPlanItem] = Field(default_factory=list)
+    rebalance_actions: list[RebalanceAction] = Field(default_factory=list)
     recommendation: Recommendation | None = None
     approval: ApprovalRequest | None = None
     summary: str = ""

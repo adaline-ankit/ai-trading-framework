@@ -1,6 +1,6 @@
 [project]
 name = "ai-trading-framework"
-version = "0.5.1"
+version = "0.6.0"
 description = "Open-source AI trading workflow framework with human-in-the-loop execution."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -44,6 +44,10 @@ dev = [
 opentelemetry = [
   "opentelemetry-api>=1.30.0",
   "opentelemetry-sdk>=1.30.0",
+]
+docs = [
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.6.15",
 ]
 
 [project.scripts]

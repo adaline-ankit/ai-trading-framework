@@ -118,9 +118,9 @@ This checklist tracks the work needed to turn the current framework into one ins
 - [x] Zerodha funds/margins sync
 - [x] auto-budget mode using available cash
 - [x] paper broker funds support
-- [ ] holdings-aware recommendations
-- [ ] allocation across multiple ideas, not just best single idea
-- [ ] rebalance suggestions
+- [x] holdings-aware recommendations
+- [x] allocation across multiple ideas, not just best single idea
+- [x] rebalance suggestions
 
 ### Telegram UX
 
@@ -140,13 +140,13 @@ This checklist tracks the work needed to turn the current framework into one ins
 - [x] `/submit`
 - [ ] richer inline action flows
 - [ ] daily briefing mode
-- [ ] cleaner human-readable summaries
+- [x] cleaner human-readable summaries
 
 ### Dashboard Product UX
 
-- [ ] watchlist management UI
-- [ ] investment planner UI
-- [ ] holdings and funds cards
+- [x] watchlist management UI
+- [x] investment planner UI
+- [x] holdings and funds cards
 - [ ] capability toggles
 - [ ] bot configuration page
 - [ ] better replay timeline UI
@@ -155,10 +155,10 @@ This checklist tracks the work needed to turn the current framework into one ins
 
 - [x] setup wizard docs
 - [x] product quickstart for end users
-- [ ] “build your bot in 10 minutes” tutorial
+- [x] “build your bot in 10 minutes” tutorial
 - [x] end-state product doc
 - [ ] screenshots/GIFs for README and docs
-- [ ] docs site beyond markdown files
+- [x] docs site beyond markdown files
 
 ### Live Trading Hardening
 

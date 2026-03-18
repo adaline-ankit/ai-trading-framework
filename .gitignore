@@ -11,3 +11,4 @@ ai_trading_framework.db
 dist/
 build/
 *.egg-info/
+site/

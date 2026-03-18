@@ -273,7 +273,8 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
       }}
       .detail-box,
       .positions-box,
-      .console-box {{
+      .console-box,
+      .watchlist-box {{
         border: 1px solid var(--line);
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.74);
@@ -289,6 +290,24 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
       .positions-grid {{
         display: grid;
         gap: 14px;
+      }}
+      .watchlist-tags {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }}
+      .watchlist-tag {{
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.82);
+      }}
+      .watchlist-tag button {{
+        padding: 4px 8px;
+        font-size: 0.82rem;
       }}
       .position-item {{
         display: flex;
@@ -428,15 +447,60 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
           <div class="positions-grid">
             <section class="positions-box">
               <h3 class="section-title">Paper Broker</h3>
+              <div id="paper-funds" class="subtle" style="margin-bottom: 10px;">Loading funds...</div>
               <div id="paper-positions">No positions yet.</div>
             </section>
             <section class="positions-box">
               <h3 class="section-title">Zerodha</h3>
+              <div id="zerodha-funds" class="subtle" style="margin-bottom: 10px;">Loading funds...</div>
               <div id="zerodha-positions">No positions yet.</div>
             </section>
             <section class="console-box">
               <h3 class="section-title">Replay / Benchmark Output</h3>
               <pre id="console-output">Run a scan or click Replay / Benchmark.</pre>
+            </section>
+            <section class="watchlist-box">
+              <h3 class="section-title">Watchlist</h3>
+              <div class="control-row" style="margin-bottom:12px;">
+                <div class="field">
+                  <label for="watchlist-symbol">Symbol</label>
+                  <input id="watchlist-symbol" placeholder="INFY" />
+                </div>
+                <button id="watchlist-add" class="btn-secondary" type="button">Add</button>
+              </div>
+              <div id="watchlist-items" class="watchlist-tags">
+                <div class="subtle">Loading watchlist...</div>
+              </div>
+            </section>
+            <section class="watchlist-box">
+              <h3 class="section-title">Investment Planner</h3>
+              <div class="control-row">
+                <div class="field">
+                  <label for="planner-mode">Mode</label>
+                  <select id="planner-mode">
+                    <option value="budget">Budget</option>
+                    <option value="wallet">Wallet</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="planner-budget">Budget</label>
+                  <input id="planner-budget" type="number" min="1" value="25000" />
+                </div>
+                <div class="field">
+                  <label for="planner-broker">Broker</label>
+                  <select id="planner-broker">
+                    <option value="PAPER">Paper</option>
+                    <option value="ZERODHA">Zerodha</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin-top: 12px;">
+                <label for="planner-symbols">Symbols</label>
+                <input id="planner-symbols" placeholder="INFY,TCS,SBIN" />
+              </div>
+              <div class="toolbar" style="margin-top: 12px;">
+                <button id="planner-run" class="btn-primary" type="button">Plan Allocation</button>
+              </div>
             </section>
           </div>
         </aside>
@@ -454,8 +518,11 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
       const telegramStatusEl = document.getElementById("telegram-status");
       const paperPositionsEl = document.getElementById("paper-positions");
       const zerodhaPositionsEl = document.getElementById("zerodha-positions");
+      const paperFundsEl = document.getElementById("paper-funds");
+      const zerodhaFundsEl = document.getElementById("zerodha-funds");
       const consoleOutputEl = document.getElementById("console-output");
       const statsGridEl = document.getElementById("stats-grid");
+      const watchlistItemsEl = document.getElementById("watchlist-items");
 
       function showMessage(kind, text) {{
         messageEl.className = `message visible ${{kind}}`;
@@ -534,6 +601,32 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
                   <strong>${{position.market_price}}</strong>
                   <div class="subtle">PnL ${{position.unrealized_pnl}}</div>
                 </div>
+              </div>
+            `,
+          )
+          .join("");
+      }}
+
+      function renderFunds(target, funds) {{
+        if (!funds) {{
+          target.textContent = "Funds unavailable.";
+          return;
+        }}
+        target.textContent =
+          `Funds ${{funds.available_cash.toFixed(2)}} available · Net ${{funds.net.toFixed(2)}} · Collateral ${{funds.collateral.toFixed(2)}}`;
+      }}
+
+      function renderWatchlist(items) {{
+        if (!items.length) {{
+          watchlistItemsEl.innerHTML = "<div class='subtle'>No symbols in watchlist.</div>";
+          return;
+        }}
+        watchlistItemsEl.innerHTML = items
+          .map(
+            (symbol) => `
+              <div class="watchlist-tag">
+                <strong>${{escapeForHtml(symbol)}}</strong>
+                <button class="btn-danger" type="button" onclick="removeWatchlistSymbol('${{symbol}}')">Remove</button>
               </div>
             `,
           )
@@ -736,6 +829,9 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
           renderTelegram(payload.telegram || {{enabled: false, configured: false}});
           renderPositions(paperPositionsEl, payload.positions.paper);
           renderPositions(zerodhaPositionsEl, payload.positions.zerodha);
+          renderFunds(paperFundsEl, payload.funds?.paper || null);
+          renderFunds(zerodhaFundsEl, payload.funds?.zerodha || null);
+          renderWatchlist(payload.watchlist || []);
         }} catch (error) {{
           showMessage("error", error.message);
         }}
@@ -926,6 +1022,64 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
         }}
       }}
 
+      async function addWatchlistSymbol() {{
+        const symbol = document.getElementById("watchlist-symbol").value.trim().toUpperCase();
+        if (!symbol) {{
+          showMessage("error", "Enter a symbol to add.");
+          return;
+        }}
+        try {{
+          await fetchJson(`/v1/watchlist/${{symbol}}`, {{ method: "POST" }});
+          document.getElementById("watchlist-symbol").value = "";
+          showMessage("success", `${{symbol}} added to the watchlist.`);
+          await loadBootstrap();
+        }} catch (error) {{
+          showMessage("error", error.message);
+        }}
+      }}
+
+      async function removeWatchlistSymbol(symbol) {{
+        try {{
+          await fetchJson(`/v1/watchlist/${{symbol}}`, {{ method: "DELETE" }});
+          showMessage("success", `${{symbol}} removed from the watchlist.`);
+          await loadBootstrap();
+        }} catch (error) {{
+          showMessage("error", error.message);
+        }}
+      }}
+
+      async function runInvestmentPlan() {{
+        const mode = document.getElementById("planner-mode").value;
+        const budgetInput = document.getElementById("planner-budget").value;
+        const broker = document.getElementById("planner-broker").value;
+        const symbolInput = document.getElementById("planner-symbols").value.trim();
+        const symbols = symbolInput
+          ? symbolInput.split(",").map((item) => item.trim().toUpperCase()).filter(Boolean)
+          : null;
+        try {{
+          let effectiveBudget = Number(budgetInput || "0");
+          if (mode === "wallet") {{
+            const summary = await fetchJson(`/v1/portfolio/summary?broker=${{broker}}`);
+            effectiveBudget = Number(summary.funds?.available_cash || 0);
+            if (!effectiveBudget) {{
+              throw new Error("Wallet mode needs broker funds to be available.");
+            }}
+          }}
+          const payload = await fetchJson("/v1/investment-plan", {{
+            method: "POST",
+            body: JSON.stringify({{
+              budget: effectiveBudget,
+              broker,
+              symbols,
+            }}),
+          }});
+          consoleOutputEl.textContent = JSON.stringify(payload, null, 2);
+          showMessage("success", payload.summary || "Investment plan generated.");
+        }} catch (error) {{
+          showMessage("error", error.message);
+        }}
+      }}
+
       document.getElementById("scan-button").addEventListener("click", scanSymbol);
       document.getElementById("benchmark-button").addEventListener("click", benchmarkSymbol);
       document.getElementById("refresh-button").addEventListener("click", loadBootstrap);
@@ -935,7 +1089,10 @@ def render_operator_console(app_name: str, operator: dict[str, object] | None) -
       document.getElementById("disconnect-zerodha").addEventListener("click", disconnectZerodha);
       document.getElementById("setup-telegram").addEventListener("click", setupTelegram);
       document.getElementById("clear-history").addEventListener("click", clearHistory);
+      document.getElementById("watchlist-add").addEventListener("click", addWatchlistSymbol);
+      document.getElementById("planner-run").addEventListener("click", runInvestmentPlan);
       document.getElementById("logout-button").addEventListener("click", logout);
+      window.removeWatchlistSymbol = removeWatchlistSymbol;
       window.approveRecommendation = approveRecommendation;
       window.rejectRecommendation = rejectRecommendation;
       window.previewOrder = previewOrder;

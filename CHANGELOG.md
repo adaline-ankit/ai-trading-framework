@@ -4,6 +4,18 @@ All notable changes to `ai-trading-framework` are documented in this file.
 
 The format is based on Keep a Changelog and the project follows Semantic Versioning.
 
+## [0.6.0] - 2026-03-18
+
+### Added
+- Holdings-aware allocation planning with multi-idea budget splits and rebalance suggestions.
+- A stronger operator dashboard with watchlist management, investment planner controls, and broker funds visibility.
+- A docs-site scaffold with MkDocs Material and a new "Build Your Bot In 10 Minutes" tutorial.
+- Additional end-to-end coverage for dashboard bootstrap funds and the richer planner flow.
+
+### Changed
+- Improved Telegram `/invest` summaries so operators see wallet cash, allocation splits, and rebalance actions directly in chat.
+- Updated the unified-bot checklist and README to reflect the finished product depth more accurately.
+
 ## [0.5.1] - 2026-03-17
 
 ### Changed

@@ -95,7 +95,7 @@ docker run --rm -p 8000:8000 \
   ai-trading-framework
 ```
 
-For a local containerized stack, see [docker-compose.yml](../docker-compose.yml).
+For a local containerized stack, use the repository's `docker-compose.yml` from the project root.
 
 ## Generic Container Platforms
 

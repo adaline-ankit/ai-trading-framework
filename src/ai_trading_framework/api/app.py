@@ -243,11 +243,15 @@ def create_app() -> FastAPI:
             "session": zerodha_public_session(),
         }
         zerodha_positions = []
+        zerodha_funds = None
         if zerodha_status["connected"]:
             zerodha_positions = [
                 position.model_dump(mode="json")
                 for position in await runtime.get_positions(BrokerName.ZERODHA)
             ]
+            funds = await runtime.get_funds(BrokerName.ZERODHA)
+            zerodha_funds = funds.model_dump(mode="json") if funds else None
+        paper_funds = await runtime.get_funds(BrokerName.PAPER)
         return {
             "recommendations": runtime.list_recommendations(),
             "bot": app.state.bot_config.model_dump(mode="json"),
@@ -260,6 +264,10 @@ def create_app() -> FastAPI:
                     for position in await runtime.get_positions(BrokerName.PAPER)
                 ],
                 "zerodha": zerodha_positions,
+            },
+            "funds": {
+                "paper": paper_funds.model_dump(mode="json") if paper_funds else None,
+                "zerodha": zerodha_funds,
             },
         }
 
