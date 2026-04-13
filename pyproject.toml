@@ -20,7 +20,7 @@ classifiers = [
 urls = { Homepage = "https://github.com/adaline-ankit/ai-trading-framework", Repository = "https://github.com/adaline-ankit/ai-trading-framework", Documentation = "https://github.com/adaline-ankit/ai-trading-framework/tree/main/docs", Issues = "https://github.com/adaline-ankit/ai-trading-framework/issues" }
 dependencies = [
   "fastapi>=0.115.0",
-  "httpx>=0.28.0",
+  "httpx>=0.28.1",
   "jinja2>=3.1.6",
   "openai>=1.68.0",
   "pydantic>=2.10.0",
